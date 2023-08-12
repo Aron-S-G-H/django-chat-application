@@ -7,6 +7,7 @@ from chat_app.routing import websocket_urlpatterns
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ChatApp.settings')
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
