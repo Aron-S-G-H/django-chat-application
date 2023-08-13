@@ -4,16 +4,17 @@ from django.contrib.auth.models import User
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .serializer import MessageSerializer
-from.models import Message
+from.models import Message, Chat
 
 
-def fetch_message_query():
-    return Message.objects.order_by('created_at').select_related('author')
+def fetch_message_query(room_name):
+    return Message.objects.filter(chat_room__room_name=room_name).select_related('author', 'chat_room')
 
 
-def new_message_query(username, message):
+def new_message_query(username, message, room_name):
     user = User.objects.get(username=username)
-    return Message.objects.create(author=user, content=message)
+    chat_room = Chat.objects.get(room_name=room_name)
+    return Message.objects.create(author=user, content=message, chat_room=chat_room)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -29,13 +30,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def new_message(self, data):
         message = data.get('message', None)
         username = data.get('username', None)
-        create_new_message = await database_sync_to_async(new_message_query)(username, message)
+        room_name = data.get('roomName', None)
+        create_new_message = await database_sync_to_async(new_message_query)(username, message, room_name)
         new_message_json = await self.message_serializer(create_new_message)
         result = eval(new_message_json)
         await self.send_to_chat_message(result)
 
-    async def fetch_message(self):
-        message_query = await database_sync_to_async(fetch_message_query)()
+    async def fetch_message(self, data):
+        room_name = data['roomName']
+        message_query = await database_sync_to_async(fetch_message_query)(room_name)
         message_json = await self.message_serializer(message_query)
         content = {
             'message': eval(message_json),
@@ -58,10 +61,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if text_data:
             text_data_dict = json.loads(text_data)
             command = text_data_dict['command']
-            if command == 'fetch_message':
-                await self.commands[command](self)
-            else:
-                await self.commands[command](self, text_data_dict)
+            await self.commands[command](self, text_data_dict)
 
     async def send_to_chat_message(self, data):
         # Send message to room group

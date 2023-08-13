@@ -26,6 +26,7 @@
         chatSocket.onopen = function(e){
             chatSocket.send(JSON.stringify({
                 'command': 'fetch_message',
+                'roomName': roomName,
             }));
         }
 
@@ -60,6 +61,7 @@
                 'message': message,
                 'command': 'new_message',
                 'username': username,
+                'roomName': roomName,
             }));
             messageInputDom.value = '';
         };
