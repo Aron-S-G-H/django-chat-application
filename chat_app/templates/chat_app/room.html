@@ -13,6 +13,7 @@
     {{ room_name|json_script:"room-name" }}
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        let username = {{ username }}
 
         const chatSocket = new ReconnectingWebSocket(
             'ws://'
@@ -30,8 +31,14 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            for (let item of data['message']){
-                document.querySelector('#chat-log').value += (item['content'] + '\n');
+            console.log(data)
+            if (data['command'] === 'fetch_message'){
+                for (let item of data['message']){
+                    document.querySelector('#chat-log').value += (item['content'] + '\n');
+                }
+            }
+            else if (data['command'] === 'new_message'){
+                document.querySelector('#chat-log').value += (data['content'] + '\n');
             }
         };
 
@@ -52,6 +59,7 @@
             chatSocket.send(JSON.stringify({
                 'message': message,
                 'command': 'new_message',
+                'username': username,
             }));
             messageInputDom.value = '';
         };
