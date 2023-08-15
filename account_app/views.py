@@ -116,39 +116,50 @@ class CheckOtp(View):
             return JsonResponse({'status': 400, 'message': 'missed info'})
 
 
-# class ForgotPasswordView(View):
-#     def get(self, request):
-#         code = request.GET.get('code')
-#         if code and code.isdigit():
-#             try:
-#                 user = User.objects.get(one_time_password=code)
-#             except:
-#                 return JsonResponse({'status': 401, 'err': 'کد وارد شده نادرست است !'})
-#
-#             login(request, user)
-#             request.session.set_expiry(60 * 60 * 24 * 2)
-#             user.one_time_password = 0
-#             user.save()
-#             return JsonResponse({'status': 200, 'firstName': user.first_name, 'lastName': user.last_name})
-#         else:
-#             return JsonResponse({'status': 400, 'err': 'کد نامعتبر است!'})
-#
-#     def post(self, request):
-#         form = ForgotPasswordForm(request.POST)
-#         if form.is_valid():
-#             user_email = form.cleaned_data['email']
-#             try:
-#                 user = User.objects.get(email=user_email)
-#             except:
-#                 return JsonResponse({'status': 401})
-#
-#             random_code = randint(10000, 99999)
-#             user.one_time_password = random_code
-#             user.save()
-#
-#             email = send_email.delay(random_code, user_email)
-#             if not email:
-#                 return JsonResponse({'status': 400, 'err': 'خطا در ارسال ایمیل !'})
-#             return JsonResponse({'status': 200})
-#         else:
-#             return JsonResponse({'status': 400, 'err': 'فرم معتبر نمی باشد !'})
+class ForgotPasswordView(View):
+    @method_decorator(csrf_protect)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        email = request.GET.get('email', None)
+        if email:
+            try:
+                user = User.objects.get(email=email)
+            except:
+                return JsonResponse({'status': 400, 'message': 'User not found'})
+            random_code = randint(100000, 999999)
+            email_sent = send_email(random_code, email)
+            if email_sent:
+                token = str(uuid4())
+                Otp.objects.create(
+                    username=user.username,
+                    email=user.email,
+                    code=random_code,
+                    token=token,
+                )
+                return JsonResponse({'status': 200, 'token': token})
+            else:
+                return JsonResponse({
+                    'status': 500,
+                    'message': 'Service OTP encountered an error. Please try again. If the error is not resolved, contact support'
+                })
+        else:
+            return JsonResponse({'status': 400, 'message': 'Data not sent'})
+
+    def post(self, request):
+        token = request.POST.get('token')
+        code = request.POST.get('code')
+
+        if token and code:
+            try:
+                user = Otp.objects.get(token=token, code=code)
+                username = user.username
+            except:
+                return JsonResponse({'status': 400, 'message': 'Code is wrong'})
+            find_user = User.objects.get(username=username)
+            login(request, find_user)
+            user.delete()
+            return JsonResponse({'status': 200, 'username': username})
+        else:
+            return JsonResponse({'status': 400,  'message': 'Data not sent'})

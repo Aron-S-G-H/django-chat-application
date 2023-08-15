@@ -5,6 +5,7 @@ const loginForm = document.getElementById('loginForm');
 const loginUsernameInput = loginForm.querySelector('#loginUsername');
 const loginPasswordInput = loginForm.querySelector('#loginPass');
 const loginSubmitBtn = loginForm.querySelector('#loginBtn');
+const changeToForgotPass = loginForm.querySelector('#forgotPass');
 const changeToRegister = loginForm.querySelector('.changeToRegister');
 // REGISTER FORM
 const registerForm = document.getElementById('registerForm');
@@ -20,7 +21,16 @@ const changeToLogin = registerForm.querySelector('.changeToLogin');
 const otpForm = document.getElementById('otpForm');
 const otpCodeInput = otpForm.querySelector('#otpCode');
 const otpSubmitBtn = otpForm.querySelector('#otpBtn');
-const backToLogin = otpForm.querySelector('.backToLogin')
+const OPTtoLogin = otpForm.querySelector('.OTPtoLogin');
+// FORGOT PASSWORD FORM
+const forgotPassForm = document.getElementById('forgotPassForm');
+const emailSection = forgotPassForm.querySelector('#email-section');
+const codeSection = forgotPassForm.querySelector('#code-section');
+const forgotPassEmailInput = emailSection.querySelector('#forgotPassEmail');
+const forgotPassEmailSubmit = emailSection.querySelector('#forgotPassBtn');
+const forgotPassCodeInput = codeSection.querySelector('#forgotPassCodeInput')
+const forgotPassCodeSubmit = codeSection.querySelector('#submitCode');
+const FPtoLogin = forgotPassForm.querySelector('.FPtoLogin')
 
 
 function checkInputsValue(formType){
@@ -32,6 +42,10 @@ function checkInputsValue(formType){
         inputs = registerForm.querySelectorAll('.wrap-input100 input');
     } else if (formType === 'otpForm'){
         inputs = otpForm.querySelectorAll('.wrap-input100 input');
+    } else if (formType === 'forgotPass_emailSection'){
+        inputs = emailSection.querySelectorAll('.wrap-input100 input');
+    } else if (formType === 'forgotPass_codeSection'){
+        inputs = codeSection.querySelectorAll('.wrap-input100 input');
     }
 
     let inputsNumber = inputs.length;
@@ -217,6 +231,81 @@ function submitOtpCode (token) {
     }
 }
 
+forgotPassEmailSubmit.addEventListener('click', () => {
+    let checkInputs = checkInputsValue('forgotPass_emailSection');
+    if (checkInputs){
+        let email = forgotPassEmailInput.value;
+        axios.get(`/account/forgot-password?email=${email}`)
+            .then(response => {
+                if (response.data.status === 200){
+                    let token = response.data.token;
+
+                    forgotPassCodeSubmit.addEventListener('click', () => {
+                        submitCode(token);
+                    })
+                    emailSection.classList.add('d-none');
+                    codeSection.classList.remove('d-none');
+                }
+                else if (response.data.status === 400){
+                    if (response.data.message === 'Data not sent'){
+                        showError(forgotPassEmailInput.parentElement, response.data.message);
+                    }else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error 400',
+                            text: 'User not found, try to sign up',
+                            confirmButtonColor: '#3085d6',
+                        })
+                    }
+                }
+                else if (response.data.status === 500){
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error 500',
+                        text: response.data.message,
+                        confirmButtonColor: '#3085d6',
+                    })
+                }
+            })
+    }
+})
+
+function submitCode(token){
+    let checkInputs = checkInputsValue('forgotPass_codeSection');
+    if (checkInputs){
+        let formData = new FormData;
+        formData.append('code', forgotPassCodeInput.value);
+        formData.append('token', token);
+        formData.append('csrfmiddlewaretoken', forgotPassForm.dataset.csrf);
+        axios.post('/account/forgot-password', formData)
+            .then(response => {
+                if (response.data.status === 200){
+                    Swal.fire({
+                        position: 'top-start',
+                        icon: 'success',
+                        title: `Wellcome back ${response.data.username}`,
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        window.location.replace('/chat/lobby');
+                    })
+                }
+                else if (response.data.status === 400){
+                    if (response.data.message === 'Code is wrong'){
+                        showError(forgotPassCodeInput.parentElement, response.data.message);
+                    }else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error 400',
+                            text: response.data.message,
+                            confirmButtonColor: '#3085d6',
+                        })
+                    }
+                }
+            })
+    }
+}
+
 changeToRegister.addEventListener('click', event => {
     event.preventDefault();
     loginForm.classList.add('d-none');
@@ -227,8 +316,18 @@ changeToLogin.addEventListener('click', event => {
     loginForm.classList.remove('d-none');
     registerForm.classList.add('d-none');
 })
-backToLogin.addEventListener('click', event => {
+OPTtoLogin.addEventListener('click', event => {
     event.preventDefault();
     otpForm.classList.add('d-none');
+    loginForm.classList.remove('d-none');
+})
+changeToForgotPass.addEventListener('click', event => {
+    event.preventDefault();
+    loginForm.classList.add('d-none');
+    forgotPassForm.classList.remove('d-none');
+})
+FPtoLogin.addEventListener('click', event => {
+    event.preventDefault();
+    forgotPassForm.classList.add('d-none');
     loginForm.classList.remove('d-none');
 })

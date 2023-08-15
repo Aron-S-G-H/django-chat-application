@@ -22,7 +22,7 @@
 
 					<div class="p-t-13 p-b-9">
 						<span class="txt1">Password</span>
-						<a href="#" class="txt2 bo1 m-l-5">Forgot?</a>
+						<a href="#" class="txt2 bo1 m-l-5" id="forgotPass">Forgot?</a>
 					</div>
 
 					<div class="wrap-input100 validate-input">
@@ -118,8 +118,45 @@
 					</div>
 					<div class="w-full text-center p-t-55">
 						<span class="txt2">back to login form?</span>
-						<a href="#" class="txt2 bo1 backToLogin">Back</a>
+						<a href="#" class="txt2 bo1 OTPTtoLogin">Back</a>
 					</div>
+				</form>
+
+                <!-------------------FORGOT PASSWORD FORM---------------------->
+                <form class="login100-form validate-form flex-sb flex-w d-none" id="forgotPassForm" data-csrf="{{ csrf_token }}">
+                    <div id="email-section">
+                        <div class="p-t-31 p-b-9">
+						    <span class="txt1">Email Address</span>
+                            <small class="text-warning">(Enter your email address)</small>
+                        </div>
+                        <div class="wrap-input100 validate-input">
+                            <input class="input100" type="text" id="forgotPassEmail" required>
+                            <span class="focus-input100"></span>
+                        </div>
+
+                        <div class="container-login100-form-btn m-t-17">
+                            <button class="login100-form-btn" id="submitEmail" type="button">Submit Email</button>
+                        </div>
+                    </div>
+
+                    <div class="d-none" id="code-section">
+                        <div class="p-t-31 p-b-9">
+						    <span class="txt1">Code</span>
+                            <small class="text-warning">(Check your email and enter the code you receive)</small>
+                        </div>
+                        <div class="wrap-input100 validate-input">
+                            <input class="input100" type="text" id="forgotPassCodeInput" required>
+                            <span class="focus-input100"></span>
+                        </div>
+
+                        <div class="container-login100-form-btn m-t-17">
+                            <button class="login100-form-btn" id="submitCode" type="button">Submit Email</button>
+                        </div>
+                    </div>
+                    <div class="w-full text-center p-t-55">
+                        <span class="txt2">back to login form?</span>
+                        <a href="#" class="txt2 bo1 FPtoLogin">Back</a>
+                    </div>
 				</form>
 			</div>
 		</div>

@@ -20,9 +20,9 @@ class User(AbstractUser):
 class Otp(models.Model):
     username = models.CharField(max_length=150)
     email = models.EmailField()
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    password = models.CharField(max_length=60)
+    first_name = models.CharField(max_length=50, null=True, blank=True)
+    last_name = models.CharField(max_length=50, null=True, blank=True)
+    password = models.CharField(max_length=60, null=True, blank=True)
     code = models.SmallIntegerField()
     token = models.CharField(max_length=125)
 
