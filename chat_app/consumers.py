@@ -1,6 +1,6 @@
 from rest_framework.renderers import JSONRenderer
 from channels.db import database_sync_to_async
-from django.contrib.auth.models import User
+from account_app.models import User
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .serializer import MessageSerializer
