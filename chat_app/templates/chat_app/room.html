@@ -1,70 +1,135 @@
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Chat Room</title>
-    <script src="{% static 'chat-app/js/reconnecting-websocket.min.js' %}"></script>
-</head>
-<body>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
-    {{ room_name|json_script:"room-name" }}
-    <script>
-        const roomName = JSON.parse(document.getElementById('room-name').textContent);
-        let username = {{ username }}
 
-        const chatSocket = new ReconnectingWebSocket(
-            'ws://'
-            + window.location.host
-            + '/ws/chat/'
-            + roomName
-            + '/'
-        );
+<div class="card-header msg_head">
+    <div class="d-flex bd-highlight">
+        <div class="img_cont">
+            <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
+                 class="rounded-circle user_img">
+            <span class="online_icon"></span>
+        </div>
+        <div class="user_info">
+            <span>{{ room_name }}</span>
+            <p>1767 Messages</p>
+        </div>
+        <div class="video_cam">
+            <span><i class="fas fa-video"></i></span>
+            <span><i class="fas fa-phone"></i></span>
+        </div>
+    </div>
+    <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
+    <div class="action_menu">
+        <ul>
+            <li><i class="fas fa-user-circle"></i> View profile</li>
+            <li><i class="fas fa-users"></i> Add to close friends</li>
+            <li><i class="fas fa-plus"></i> Add to group</li>
+            <li><i class="fas fa-ban"></i> Block</li>
+        </ul>
+    </div>
+</div>
 
-        chatSocket.onopen = function(e){
-            chatSocket.send(JSON.stringify({
-                'command': 'fetch_message',
-                'roomName': roomName,
-            }));
+<div class="card-body msg_card_body"></div>
+
+<div class="card-footer">
+    <div class="input-group">
+        <div class="input-group-append">
+            <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+        </div>
+        <textarea id="chat-message-input" class="form-control type_msg" placeholder="Type your message..."></textarea>
+        <div class="input-group-append">
+            <span id="chat-message-submit" class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></span>
+        </div>
+    </div>
+</div>
+{{ room_name|json_script:"room-name" }}
+<script>
+    let roomName = JSON.parse(document.getElementById('room-name').textContent);
+    let username = {{ username }};
+    let messageBody = document.querySelector('.msg_card_body');
+
+    const chatSocket = new ReconnectingWebSocket(
+        'ws://'
+        + window.location.host
+        + '/ws/chat/'
+        + roomName
+        + '/'
+    );
+
+    chatSocket.onopen = function (e) {
+        chatSocket.send(JSON.stringify({
+            'command': 'fetch_message',
+            'roomName': roomName,
+        }));
+    }
+
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        if (data['command'] === 'fetch_message') {
+            for (let item of data['message']){
+               createMessage(item);
+            }
+        } else if (data['command'] === 'new_message') {
+            createMessage(data)
         }
+    };
 
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log(data)
-            if (data['command'] === 'fetch_message'){
-                for (let item of data['message']){
-                    document.querySelector('#chat-log').value += (item['content'] + '\n');
-                }
-            }
-            else if (data['command'] === 'new_message'){
-                document.querySelector('#chat-log').value += (data['content'] + '\n');
-            }
-        };
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
 
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeyup = function (e) {
+        if (e.key === 'Enter') {  // enter, return
+            document.querySelector('#chat-message-submit').click();
+        }
+    };
 
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.key === 'Enter') {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
+    document.querySelector('#chat-message-submit').onclick = function (e) {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'command': 'new_message',
+            'username': username,
+            'roomName': roomName,
+        }));
+        messageInputDom.value = '';
+    };
 
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'message': message,
-                'command': 'new_message',
-                'username': username,
-                'roomName': roomName,
-            }));
-            messageInputDom.value = '';
-        };
-    </script>
-</body>
-</html>
+    function createMessage(data){
+        console.log(data)
+       let author = data['__str__'];
+       let content = data['content'];
+       let createDate = new Date(data['created_at']);
+       let date = createDate.getDate();
+       let month = createDate.getMonth();
+       let year = createDate.getFullYear();
+       let hour = createDate.getHours();
+       let min = createDate.getMinutes();
+       let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
+       if (author === username){
+           messageBody.insertAdjacentHTML('beforeend',
+               `<div class="d-flex justify-content-end mb-4">
+                    <span class="msg_time_send">${dateFormat}</span>
+                    <div class="msg_cotainer_send">
+                        ${content}
+                    </div>
+                </div>`
+           )
+       }
+       else {
+           messageBody.insertAdjacentHTML('beforeend',
+               `<div class="d-flex justify-content-start mb-4">
+                    <div class="msg_cotainer">
+                        ${content}
+                    </div>
+                    <span class="msg_time">${dateFormat}</span>
+               </div>`
+           )
+       }
+    }
+    $(document).ready(function () {
+        $('#action_menu_btn').click(function () {
+            $('.action_menu').toggle();
+        });
+    });
+</script>

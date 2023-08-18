@@ -21,13 +21,13 @@ const changeToLogin = registerForm.querySelector('.changeToLogin');
 const otpForm = document.getElementById('otpForm');
 const otpCodeInput = otpForm.querySelector('#otpCode');
 const otpSubmitBtn = otpForm.querySelector('#otpBtn');
-const OPTtoLogin = otpForm.querySelector('.OTPtoLogin');
+const OTPtoLogin = otpForm.querySelector('.OTPtoLogin');
 // FORGOT PASSWORD FORM
 const forgotPassForm = document.getElementById('forgotPassForm');
 const emailSection = forgotPassForm.querySelector('#email-section');
 const codeSection = forgotPassForm.querySelector('#code-section');
 const forgotPassEmailInput = emailSection.querySelector('#forgotPassEmail');
-const forgotPassEmailSubmit = emailSection.querySelector('#forgotPassBtn');
+const forgotPassEmailSubmit = emailSection.querySelector('#submitEmail');
 const forgotPassCodeInput = codeSection.querySelector('#forgotPassCodeInput')
 const forgotPassCodeSubmit = codeSection.querySelector('#submitCode');
 const FPtoLogin = forgotPassForm.querySelector('.FPtoLogin')
@@ -316,7 +316,7 @@ changeToLogin.addEventListener('click', event => {
     loginForm.classList.remove('d-none');
     registerForm.classList.add('d-none');
 })
-OPTtoLogin.addEventListener('click', event => {
+OTPtoLogin.addEventListener('click', event => {
     event.preventDefault();
     otpForm.classList.add('d-none');
     loginForm.classList.remove('d-none');

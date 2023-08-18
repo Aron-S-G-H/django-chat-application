@@ -1,30 +1,70 @@
+{% load static %}
+
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Chat Rooms</title>
-</head>
+<html lang="en">
+{% include 'templates/includes/chat-header.html' %}
 <body>
-    {% for room in chat_romms %}
-        <a href="{% url 'chat:room' room.room_name %}">{{ room.room_name }}</a>
-        <br>
-    {% endfor %}
-    What chat room would you like to enter?<br>
-    <input id="room-name-input" type="text" size="100"><br>
-    <input id="room-name-submit" type="button" value="Enter">
+<div class="container-fluid h-100">
+    <div class="row justify-content-center h-100">
+        <div class="col-md-4 col-xl-3 chat">
+            <div class="card mb-sm-3 mb-md-0 contacts_card">
+                <div class="card-header">
+                    <div class="input-group">
+                        <input type="text" placeholder="Search..." name="" class="form-control search">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body contacts_body">
+                    <ul class="contacts">
+                        {% if chat_rooms %}
+                            {% for room in chat_rooms %}
+                                <li>
+                                    <a href="{% url 'chat:room' room.room_name %}" class="rooms">
+                                        <div class="d-flex bd-highlight">
+                                            <div class="img_cont">
+                                                <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
+                                                     class="rounded-circle user_img" alt="Icon">
+                                                <span class="online_icon"></span>
+                                            </div>
+                                            <div class="user_info">
+                                                <span>{{ room.room_name.capitalize }}</span>
+                                                <p>Kalid is online</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <span>No Room</span>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="card-footer"></div>
+            </div>
+        </div>
+        <div class="col-md-8 col-xl-6 chat">
+            <div class="card" id="conversation">
 
-    <script>
-        document.querySelector('#room-name-input').focus();
-        document.querySelector('#room-name-input').onkeyup = function(e) {
-            if (e.key === 'Enter') {  // enter, return
-                document.querySelector('#room-name-submit').click();
-            }
-        };
-
-        document.querySelector('#room-name-submit').onclick = function(e) {
-            let roomName = document.querySelector('#room-name-input').value;
-            window.location.pathname = '/chat/room/' + roomName;
-        };
-    </script>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
+<script>
+    $(document).ready(function () {
+        $(".rooms").click(function (e) {
+            e.preventDefault();
+            let url = $(this).attr("href");
+
+            $.ajax({
+                url: url,
+                success: function (response) {
+                    $("#conversation").html(response);
+                }
+            });
+        });
+    });
+</script>
 </html>

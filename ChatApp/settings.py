@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_cleanup',
     # My Apps
     'chat_app.apps.ChatAppConfig',
     'account_app.apps.AccountAppConfig',

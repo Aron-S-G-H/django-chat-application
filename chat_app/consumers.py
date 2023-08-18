@@ -4,7 +4,7 @@ from account_app.models import User
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .serializer import MessageSerializer
-from.models import Message, Chat
+from.models import Message, ChatRoom
 
 
 def fetch_message_query(room_name):
@@ -13,7 +13,7 @@ def fetch_message_query(room_name):
 
 def new_message_query(username, message, room_name):
     user = User.objects.get(username=username)
-    chat_room = Chat.objects.get(room_name=room_name)
+    chat_room = ChatRoom.objects.get(room_name=room_name)
     return Message.objects.create(author=user, content=message, chat_room=chat_room)
 
 
@@ -70,6 +70,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "type": "chat_message",
             "content": data['content'],
             "__str__": data['__str__'],
+            "created_at": data['created_at'],
             'command': 'new_message'
         })
 
