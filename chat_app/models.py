@@ -5,7 +5,6 @@ from account_app.models import User
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=50, unique=True)
     members = models.ManyToManyField(User)
-    slug = models.SlugField(allow_unicode=True, unique=True)
 
     def __str__(self):
         return self.room_name

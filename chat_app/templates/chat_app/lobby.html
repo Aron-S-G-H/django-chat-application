@@ -10,15 +10,18 @@
             <div class="card mb-sm-3 mb-md-0 contacts_card">
                 <div class="card-header">
                     <div class="input-group">
-                        <input type="text" placeholder="Search..." name="" class="form-control search">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
-                        </div>
+                        <form method="post" action="{% url 'chat:lobby' %}" class="d-flex" style="width: inherit">
+                            {% csrf_token %}
+                            <input type="text" placeholder="Search..." name="room_name" class="form-control search">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="card-body contacts_body">
-                    <ul class="contacts">
-                        {% if chat_rooms %}
+                {% if chat_rooms %}
+                    <div class="card-body contacts_body">
+                        <ul class="contacts">
                             {% for room in chat_rooms %}
                                 <li>
                                     <a href="{% url 'chat:room' room.room_name %}" class="rooms">
@@ -36,18 +39,26 @@
                                     </a>
                                 </li>
                             {% endfor %}
-                        {% else %}
-                            <span>No Room</span>
-                        {% endif %}
-                    </ul>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="card-body contacts_body d-flex justify-content-center" style="align-items: center">
+                        <div class="d-flex flex-column text-center">
+                            <span class="text-light font-weight-bold" style="font-size: larger">No Room exists</span>
+                            <span class="text-light">Search for a Room or Create a new Room</span>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="card-footer text-center">
+                    <a href="#" class="text-warning" id="createRoom">
+                        Create new Room
+                        <i class="fas fa-plus"></i>
+                    </a>
                 </div>
-                <div class="card-footer"></div>
             </div>
         </div>
         <div class="col-md-8 col-xl-6 chat">
-            <div class="card" id="conversation">
-
-            </div>
+            <div class="card" id="conversation"></div>
         </div>
     </div>
 </div>
@@ -66,5 +77,68 @@
             });
         });
     });
+
+    let createRoomElement = document.getElementById('createRoom');
+
+    createRoomElement.addEventListener('click', event => {
+        event.preventDefault();
+        Swal.fire({
+            title: 'Enter your Room name',
+            input: 'text',
+            inputAttributes: {
+                autocapitalize: 'off',
+                required: true,
+            },
+            showCancelButton: true,
+            confirmButtonText: 'create',
+            showLoaderOnConfirm: true,
+            preConfirm: (name) => {
+                $.ajax({
+                    url: '{% url 'chat:create-room' %}',
+                    type: 'POST',
+                    data: {
+                        'room_name': name,
+                    },
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+                    },
+                    success: function (response) {
+                        if (response.status === 200) {
+                            Swal.fire({
+                                position: 'top-start',
+                                icon: 'success',
+                                title: 'Your new room has been created',
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(() => {
+                                window.location.reload()
+                            })
+                        }
+                        else if (response.status === 409) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Room Exists',
+                                text: 'Room with this name exists. You can search and join the room',
+                                confirmButtonColor: '#3085d6',
+                            });
+                        }
+                        else if (response.status === 400){
+                            Swal.fire('Something went wrong, Room name didnt received')
+                        }
+                    },
+                    error: function (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: error.code,
+                            text: 'Service encountered an error. Please try again. If the error is not resolved, contact support',
+                            confirmButtonColor: '#3085d6',
+                        })
+                        console.log(error)
+                    }
+                })
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        })
+    })
 </script>
 </html>
