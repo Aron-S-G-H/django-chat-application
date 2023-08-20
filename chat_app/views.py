@@ -16,15 +16,18 @@ class LobbyView(LoginRequiredMixin, View):
         return render(request, 'chat_app/lobby.html', {'chat_rooms': chat_rooms, 'user': user})
 
     def post(self, request):
-        room_name = request.POST.get('room_name')
+        room_name = request.POST.get('room_name', None)
         user = request.user
-        chat_room = ChatRoom.objects.filter(room_name=room_name).prefetch_related('members')
-        if chat_room.exists():
-            if user not in chat_room[0].members.all:
-                chat_room[0].members.add(user)
-            return render(request, 'chat_app/lobby.html', {'chat_rooms': chat_room, 'user': user})
-        else:
-            return render(request, 'chat_app/lobby.html', {'user': user})
+        if room_name and user:
+            try:
+                chat_room = ChatRoom.objects.get(room_name=room_name)
+                if user in chat_room.members.all():
+                    return JsonResponse({'status': 409})
+                else:
+                    return JsonResponse({"status": 200})
+            except ChatRoom.DoesNotExist:
+                return JsonResponse({"status": 404})
+        return JsonResponse({'status': 400})
 
 
 class RoomView(LoginRequiredMixin, View):
@@ -55,4 +58,12 @@ class CreateRoomView(LoginRequiredMixin, View):
             return JsonResponse({'status': 200})
 
 
-
+def join_room(request):
+    if request.method == 'POST':
+        user = request.user
+        room_name = request.POST.get('room_name', None)
+        if user and room_name:
+            room = ChatRoom.objects.get(room_name=room_name)
+            room.members.add(user)
+            return JsonResponse({'status': 200})
+    return JsonResponse({'status': 400})

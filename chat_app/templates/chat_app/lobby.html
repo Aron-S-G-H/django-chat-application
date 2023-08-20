@@ -10,13 +10,10 @@
             <div class="card mb-sm-3 mb-md-0 contacts_card">
                 <div class="card-header">
                     <div class="input-group">
-                        <form method="post" action="{% url 'chat:lobby' %}" class="d-flex" style="width: inherit">
-                            {% csrf_token %}
-                            <input type="text" placeholder="Search..." name="room_name" class="form-control search">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
-                            </div>
-                        </form>
+                        <input type="text" placeholder="Search..." id="searchInput" class="form-control search">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
+                        </div>
                     </div>
                 </div>
                 {% if chat_rooms %}
@@ -24,7 +21,7 @@
                         <ul class="contacts">
                             {% for room in chat_rooms %}
                                 <li>
-                                    <a href="{% url 'chat:room' room.room_name %}" class="rooms">
+                                    <a href="{% url 'chat:room' room.room_name %}" class="rooms" id="{{ room.room_name }}">
                                         <div class="d-flex bd-highlight">
                                             <div class="img_cont">
                                                 <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
@@ -78,8 +75,8 @@
         });
     });
 
+    // ----------CREATE ROOM
     let createRoomElement = document.getElementById('createRoom');
-
     createRoomElement.addEventListener('click', event => {
         event.preventDefault();
         Swal.fire({
@@ -113,16 +110,14 @@
                             }).then(() => {
                                 window.location.reload()
                             })
-                        }
-                        else if (response.status === 409) {
+                        } else if (response.status === 409) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Room Exists',
                                 text: 'Room with this name exists. You can search and join the room',
                                 confirmButtonColor: '#3085d6',
                             });
-                        }
-                        else if (response.status === 400){
+                        } else if (response.status === 400) {
                             Swal.fire('Something went wrong, Room name didnt received')
                         }
                     },
@@ -139,6 +134,122 @@
             },
             allowOutsideClick: () => !Swal.isLoading()
         })
-    })
+    });
+
+    // ----------SEARCH ROOM
+    let searchInput = document.getElementById('searchInput');
+    let searchIcon = document.querySelector('.input-group .search_btn');
+    searchInput.addEventListener('keypress', event => {
+        if (event.key === 'Enter') {
+            searchRoom();
+        }
+    });
+    searchIcon.addEventListener('click', searchRoom);
+
+    function searchRoom() {
+        let roomName = searchInput.value;
+        if (roomName) {
+            $.ajax({
+                url: '{% url 'chat:lobby' %}',
+                type: 'POST',
+                data: {
+                    'room_name': roomName,
+                },
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+                },
+                success: function (response) {
+                    if (response.status === 400){
+                        showSearchInputError();
+                    }
+                    else if (response.status === 404){
+                        Swal.fire({
+                            icon: 'info',
+                            text: 'There is no room with this name',
+                            confirmButtonColor: '#3085d6',
+                        });
+                        clearSearchInput();
+                    }
+                    else if (response.status === 409){
+                        let room = document.getElementById(`${roomName}`);
+                        clearSearchInput();
+                        room.click();
+                    }
+                    else if (response.status === 200){
+                        Swal.fire({
+                          title: 'Do you want to join?',
+                          text: `Room ${roomName} exists, Do you wanna join?`,
+                          icon: 'warning',
+                          showCancelButton: true,
+                          confirmButtonColor: '#3085d6',
+                          cancelButtonColor: '#d33',
+                          confirmButtonText: 'Yes, Join!'
+                        }).then((result) => {
+                            if (result.isConfirmed){
+                                $.ajax({
+                                    url: '{% url "chat:join-room" %}',
+                                    type: 'POST',
+                                    data: {
+                                        'room_name': roomName,
+                                    },
+                                     beforeSend: function (xhr) {
+                                        xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+                                    },
+                                    success: function (response){
+                                        if (response.status === 200){
+                                            window.location.reload();
+                                            clearSearchInput();
+                                        }
+                                        else if (response.status === 400){
+                                            Swal.fire({
+                                                text: 'Somethon went Wrong, try again!',
+                                                confirmButtonColor: '#3085d6',
+                                            });
+                                            clearSearchInput();
+                                        }
+                                    },
+                                    error: function (error) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: error.code,
+                                            text: 'Service encountered an error. Please try again. If the error is not resolved, contact support',
+                                            confirmButtonColor: '#3085d6',
+                                        });
+                                        clearSearchInput();
+                                        console.log(error)
+                                    },
+                                })
+                            } else {
+                                clearSearchInput()
+                            }
+                        })
+                    }
+                },
+                error: function (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: error.code,
+                        text: 'Service encountered an error. Please try again. If the error is not resolved, contact support',
+                        confirmButtonColor: '#3085d6',
+                    });
+                    clearSearchInput();
+                    console.log(error)
+                },
+            })
+        } else {
+            showSearchInputError();
+        }
+    }
+
+    function showSearchInputError() {
+        let inputGroup = searchInput.parentElement;
+        inputGroup.style.border = '2px solid red';
+        inputGroup.style.borderRadius = '17px';
+    }
+
+    function clearSearchInput(){
+        searchInput.value = '';
+        searchInput.focus();
+    }
 </script>
 </html>
