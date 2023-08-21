@@ -67,3 +67,13 @@ def join_room(request):
             room.members.add(user)
             return JsonResponse({'status': 200})
     return JsonResponse({'status': 400})
+
+
+def remove_room(request):
+    room_name = request.GET.get('room_name', None)
+    user = request.user
+    if room_name and user:
+        chat_room = ChatRoom.objects.get(room_name=room_name)
+        chat_room.members.remove(user)
+        return JsonResponse({'status': 200})
+    return JsonResponse({'status': 400})

@@ -20,7 +20,7 @@
                     <div class="card-body contacts_body">
                         <ul class="contacts">
                             {% for room in chat_rooms %}
-                                <li>
+                                <li class="d-flex justify-content-between">
                                     <a href="{% url 'chat:room' room.room_name %}" class="rooms" id="{{ room.room_name }}">
                                         <div class="d-flex bd-highlight">
                                             <div class="img_cont">
@@ -33,6 +33,10 @@
                                                 <p>Kalid is online</p>
                                             </div>
                                         </div>
+                                    </a>
+                                    <a href="#" onclick="removeRoom('{{ room.room_name }}')"
+                                       class="d-flex flex-column justify-content-center text-danger mr-3" style="font-size: larger">
+                                        <i class="fas fa-minus"></i>
                                     </a>
                                 </li>
                             {% endfor %}
@@ -250,6 +254,48 @@
     function clearSearchInput(){
         searchInput.value = '';
         searchInput.focus();
+    }
+
+    // ----------REMOVE ROOM
+    function removeRoom(roomName){
+        Swal.fire({
+            title: 'Are you sure ?',
+            text: `Do you want to exit ${roomName} room ?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, Exit!',
+        }).then((result) => {
+            if (result.isConfirmed){
+                $.ajax({
+                    url: '{% url "chat:remove-room" %}',
+                    data: {
+                        'room_name': roomName
+                    },
+                    success: function (response){
+                        if (response.status === 200){
+                            window.location.reload();
+                        }
+                        else if (response.status === 400){
+                            Swal.fire({
+                                text: 'Somethon went Wrong, try again!',
+                                confirmButtonColor: '#3085d6',
+                            });
+                        }
+                    },
+                    error: function (error){
+                        Swal.fire({
+                            icon: 'error',
+                            title: error.code,
+                            text: 'Service encountered an error. Please try again. If the error is not resolved, contact support',
+                            confirmButtonColor: '#3085d6',
+                        });
+                        console.log(error)
+                    }
+                })
+            }
+        })
     }
 </script>
 </html>
