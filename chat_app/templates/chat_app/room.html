@@ -32,7 +32,8 @@
 <div class="card-footer">
     <div class="input-group">
         <div class="input-group-append">
-            <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+            <label for="fileInput" class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></label>
+            <input type="file" id="fileInput" name="image"  class="d-none">
         </div>
         <textarea id="chat-message-input" class="form-control type_msg" placeholder="Type your message..."></textarea>
         <div class="input-group-append">
@@ -65,7 +66,7 @@
         const data = JSON.parse(e.data);
         if (data['command'] === 'fetch_message') {
             for (let item of data['message']){
-               createMessage(item);
+               fetchMessage(item);
             }
         } else if (data['command'] === 'new_message') {
             createMessage(data)
@@ -83,6 +84,23 @@
         }
     };
 
+    function readFile (){
+        if (this.files && this.files[0]){
+            let FR = new FileReader();
+            FR.addEventListener('load', event => {
+                chatSocket.send(JSON.stringify({
+                    'image': event.target.result,
+                    'command': 'new_message',
+                    'username': username,
+                    'roomName': roomName,
+                }));
+            })
+            FR.readAsDataURL(this.files[0])
+        }
+    }
+    let attachBtn = document.getElementById('fileInput');
+    attachBtn.addEventListener('change', readFile)
+
     document.querySelector('#chat-message-submit').onclick = function (e) {
         const messageInputDom = document.querySelector('#chat-message-input');
         const message = messageInputDom.value;
@@ -96,37 +114,123 @@
     };
 
     function createMessage(data){
-        console.log(data)
-       let author = data['__str__'];
-       let content = data['content'];
-       let createDate = new Date(data['created_at']);
-       let date = createDate.getDate();
-       let month = createDate.getMonth();
-       let year = createDate.getFullYear();
-       let hour = createDate.getHours();
-       let min = createDate.getMinutes();
-       let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
-       if (author === username){
-           messageBody.insertAdjacentHTML('beforeend',
-               `<div class="d-flex justify-content-end mb-4">
-                    <span class="msg_time_send">${dateFormat}</span>
-                    <div class="msg_cotainer_send">
-                        ${content}
-                    </div>
-                </div>`
-           )
-       }
+        let command = data['command'];
+        let author = data['__str__'];
+        let content = data['content'];
+        let createDate = new Date(data['created_at']);
+        let date = createDate.getDate();
+        let month = createDate.getMonth();
+        let year = createDate.getFullYear();
+        let hour = createDate.getHours();
+        let min = createDate.getMinutes();
+        let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
+        if (author === username){
+            if (command === 'image'){
+                messageBody.insertAdjacentHTML('beforeend',
+                    `<div class="d-flex justify-content-end mb-4">
+                        <span class="msg_time_send">${dateFormat}</span>
+                        <div class="msg_cotainer_send_img">
+                            <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
+                        </div>
+                    </div>`
+                )
+            } else {
+               messageBody.insertAdjacentHTML('beforeend',
+                   `<div class="d-flex justify-content-end mb-4">
+                        <span class="msg_time_send">${dateFormat}</span>
+                        <div class="msg_cotainer_send">
+                            ${content}
+                        </div>
+                   </div>`
+               )
+           }
+
+        }
        else {
-           messageBody.insertAdjacentHTML('beforeend',
-               `<div class="d-flex justify-content-start mb-4">
-                    <div class="msg_cotainer">
-                        ${content}
-                    </div>
-                    <span class="msg_time">${dateFormat}</span>
-               </div>`
-           )
+           if (command === 'image'){
+               messageBody.insertAdjacentHTML('beforeend',
+                   `<div class="d-flex justify-content-start mb-4">
+                        <div class="msg_cotainer_img">
+                            <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
+                        </div>
+                        <span class="msg_time">${dateFormat}</span>
+                   </div>`
+               )
+           } else {
+               messageBody.insertAdjacentHTML('beforeend',
+                   `<div class="d-flex justify-content-start mb-4">
+                        <div class="msg_cotainer">
+                            ${content}
+                        </div>
+                        <span class="msg_time">${dateFormat}</span>
+                   </div>`
+               )
+           }
+
        }
     }
+
+    function fetchMessage(data){
+        let content;
+        if(data.hasOwnProperty('image')){
+            content = data['image'];
+        } else {
+            content = data['content'];
+        }
+        let author = data['__str__'];
+        let createDate = new Date(data['created_at']);
+        let date = createDate.getDate();
+        let month = createDate.getMonth();
+        let year = createDate.getFullYear();
+        let hour = createDate.getHours();
+        let min = createDate.getMinutes();
+        let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
+        if (author === username){
+            if (data.hasOwnProperty('image')){
+                messageBody.insertAdjacentHTML('beforeend',
+                    `<div class="d-flex justify-content-end mb-4">
+                        <span class="msg_time_send">${dateFormat}</span>
+                        <div class="msg_cotainer_send_img">
+                            <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
+                        </div>
+                    </div>`
+                )
+            } else {
+               messageBody.insertAdjacentHTML('beforeend',
+                   `<div class="d-flex justify-content-end mb-4">
+                        <span class="msg_time_send">${dateFormat}</span>
+                        <div class="msg_cotainer_send">
+                            ${content}
+                        </div>
+                   </div>`
+               )
+           }
+
+        }
+       else {
+           if (data.hasOwnProperty('image')){
+               messageBody.insertAdjacentHTML('beforeend',
+                   `<div class="d-flex justify-content-start mb-4">
+                        <div class="msg_cotainer_img">
+                            <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
+                        </div>
+                        <span class="msg_time">${dateFormat}</span>
+                   </div>`
+               )
+           } else {
+               messageBody.insertAdjacentHTML('beforeend',
+                   `<div class="d-flex justify-content-start mb-4">
+                        <div class="msg_cotainer">
+                            ${content}
+                        </div>
+                        <span class="msg_time">${dateFormat}</span>
+                   </div>`
+               )
+           }
+
+       }
+    }
+
     $(document).ready(function () {
         $('#action_menu_btn').click(function () {
             $('.action_menu').toggle();

@@ -182,12 +182,26 @@ body, html {
     position: relative;
     max-width: 60%;
 }
+.msg_cotainer_img {
+    margin-top: auto;
+    margin-bottom: auto;
+    padding: 10px;
+    position: relative;
+    max-width: 60%;
+}
 
 .msg_cotainer_send {
     margin-top: auto;
     margin-bottom: auto;
     border-radius: 25px;
     background-color: #78e08f;
+    padding: 10px;
+    position: relative;
+    max-width: 60%;
+}
+.msg_cotainer_send_img {
+    margin-top: auto;
+    margin-bottom: auto;
     padding: 10px;
     position: relative;
     max-width: 60%;

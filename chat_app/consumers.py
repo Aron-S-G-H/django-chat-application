@@ -4,6 +4,10 @@ from account_app.models import User
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .serializer import MessageSerializer
+import base64
+import io
+from PIL import Image
+from django.core.files.base import ContentFile
 from.models import Message, ChatRoom
 
 
@@ -11,10 +15,19 @@ def fetch_message_query(room_name):
     return Message.objects.filter(chat_room__room_name=room_name).select_related('author', 'chat_room')
 
 
-def new_message_query(username, message, room_name):
+def new_message_query(username, room_name, message=None, image=None):
     user = User.objects.get(username=username)
     chat_room = ChatRoom.objects.get(room_name=room_name)
-    return Message.objects.create(author=user, content=message, chat_room=chat_room)
+    model = Message.objects.create(author=user, content=message, chat_room=chat_room)
+    if image:
+        format, imgstr = image.split(';base64,')
+        ext = format.split('/')[-1]
+        data = ContentFile(base64.b64decode(imgstr), name='image')
+        # decoded_file = base64.b64decode(image)
+        # image_file = open(decoded_file)
+        model.image.save('image.jpg', data)
+        model.save()
+    return model
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -29,12 +42,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def new_message(self, data):
         message = data.get('message', None)
+        image = data.get('image', None)
         username = data.get('username', None)
         room_name = data.get('roomName', None)
-        create_new_message = await database_sync_to_async(new_message_query)(username, message, room_name)
+        create_new_message = await database_sync_to_async(new_message_query)(username, room_name, message, image)
         new_message_json = await self.message_serializer(create_new_message)
         result = eval(new_message_json)
-        await self.send_to_chat_message(result)
+        if image:
+            context = {'command': 'image', 'result': result}
+        else:
+            context = {'command': 'new_message', 'result': result}
+        await self.send_to_chat_message(context)
 
     async def fetch_message(self, data):
         room_name = data['roomName']
@@ -45,6 +63,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'command': 'fetch_message',
         }
         await self.chat_message(content)
+
+    # async def image(self, data):
+    #     # image = data.get('image', None)
+    #     username = data.get('username', None)
+    #     room_name = data.get('roomName', None)
+    #     create_new_image = await database_sync_to_async(new_message_query)(username, room_name, image)
+    #     new_message_json = await self.message_serializer(create_new_image)
+    #     result = eval(new_message_json)
+    #     await self.send_to_chat_message({
+    #         'command': 'image',
+    #         'result': result,
+    #     })
 
     async def message_serializer(self, query):
         serialized_message = MessageSerializer(query, many=(lambda query: True if (query.__class__.__name__ == 'QuerySet') else False)(query))
@@ -64,14 +94,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.commands[command](self, text_data_dict)
 
     async def send_to_chat_message(self, data):
-        # Send message to room group
         print(data)
+        command = data.get('command')
+        # Send message to room group
         await self.channel_layer.group_send(self.room_group_name, {
             "type": "chat_message",
-            "content": data['content'],
-            "__str__": data['__str__'],
-            "created_at": data['created_at'],
-            'command': 'new_message'
+            "content": (lambda content: data['result']['image'] if(command == 'image') else data['result']['content'])(command),
+            "__str__": data['result']['__str__'],
+            "created_at": data['result']['created_at'],
+            'command': command,
         })
 
     async def chat_message(self, event):
