@@ -1,87 +1,66 @@
+{% extends 'templates/base.html' %}
 {% load static %}
-
-<!DOCTYPE html>
-<html lang="en">
-{% include 'templates/includes/chat-header.html' %}
-<body>
-<div class="container-fluid h-100">
-    <div class="row justify-content-center h-100">
-        <div class="col-md-4 col-xl-3 chat">
-            <div class="card mb-sm-3 mb-md-0 contacts_card">
-                <div class="card-header">
-                    <div class="input-group">
-                        <input type="text" placeholder="Search..." id="searchInput" class="form-control search">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
-                        </div>
+{% block main %}
+    <div class="col-md-4 col-xl-3 chat">
+        <div class="card mb-sm-3 mb-md-0 contacts_card">
+            <div class="card-header">
+                <div class="input-group">
+                    <input type="text" placeholder="Search..." id="searchInput" class="form-control search">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
                     </div>
-                </div>
-                {% if chat_rooms %}
-                    <div class="card-body contacts_body">
-                        <ul class="contacts">
-                            {% for room in chat_rooms %}
-                                <li class="d-flex justify-content-between">
-                                    <a href="{% url 'chat:room' room.room_name %}" class="rooms" id="{{ room.room_name }}">
-                                        <div class="d-flex bd-highlight">
-                                            <div class="img_cont">
-                                                {% if room.room_image %}
-                                                    <img src="{{ room.room_image.url }}" class="rounded-circle user_img" alt="Icon">
-                                                {% else %}
-                                                    <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img" alt="Icon">
-                                                {% endif %}
-                                                <span class="online_icon"></span>
-                                            </div>
-                                            <div class="user_info">
-                                                <span>{{ room.room_name.capitalize }}</span>
-                                                <p>Kalid is online</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a href="#" onclick="removeRoom('{{ room.room_name }}')"
-                                       class="d-flex flex-column justify-content-center text-danger mr-3" style="font-size: larger">
-                                        <i class="fas fa-minus"></i>
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% else %}
-                    <div class="card-body contacts_body d-flex justify-content-center" style="align-items: center">
-                        <div class="d-flex flex-column text-center">
-                            <span class="text-light font-weight-bold" style="font-size: larger">No Room exists</span>
-                            <span class="text-light">Search for a Room or Create a new Room</span>
-                        </div>
-                    </div>
-                {% endif %}
-                <div class="card-footer text-center">
-                    <a href="#" class="text-warning" id="createRoom">
-                        Create new Room
-                        <i class="fas fa-plus"></i>
-                    </a>
                 </div>
             </div>
-        </div>
-        <div class="col-md-8 col-xl-6 chat">
-            <div class="card" id="conversation"></div>
+            {% if chat_rooms %}
+                <div class="card-body contacts_body">
+                    <ul class="contacts">
+                        {% for room in chat_rooms %}
+                            <li class="d-flex justify-content-between">
+                                <a href="{% url 'chat:room' room.room_name %}" class="rooms" id="{{ room.room_name }}">
+                                    <div class="d-flex bd-highlight">
+                                        <div class="img_cont">
+                                            {% if room.room_image %}
+                                                <img src="{{ room.room_image.url }}" class="rounded-circle user_img"
+                                                     alt="Icon">
+                                            {% else %}
+                                                <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img"
+                                                     alt="Icon">
+                                            {% endif %}
+                                            <span class="online_icon"></span>
+                                        </div>
+                                        <div class="user_info">
+                                            <span>{{ room.room_name.capitalize }}</span>
+                                            <p>Kalid is online</p>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="#" onclick="removeRoom('{{ room.room_name }}')"
+                                   class="d-flex flex-column justify-content-center text-danger mr-3"
+                                   style="font-size: larger">
+                                    <i class="fas fa-minus"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class="card-body contacts_body d-flex justify-content-center" style="align-items: center">
+                    <div class="d-flex flex-column text-center">
+                        <span class="text-light font-weight-bold" style="font-size: larger">No Room exists</span>
+                        <span class="text-light">Search for a Room or Create a new Room</span>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="card-footer text-center">
+                <a href="#" class="text-warning" id="createRoom">
+                    Create new Room
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
         </div>
     </div>
-</div>
-</body>
+
 <script>
-    $(document).ready(function () {
-        $(".rooms").click(function (e) {
-            e.preventDefault();
-            let url = $(this).attr("href");
-
-            $.ajax({
-                url: url,
-                success: function (response) {
-                    $("#conversation").html(response);
-                }
-            });
-        });
-    });
-
     // ----------CREATE ROOM
     let createRoomElement = document.getElementById('createRoom');
     createRoomElement.addEventListener('click', event => {
@@ -166,48 +145,44 @@
                     xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
                 },
                 success: function (response) {
-                    if (response.status === 400){
+                    if (response.status === 400) {
                         showSearchInputError();
-                    }
-                    else if (response.status === 404){
+                    } else if (response.status === 404) {
                         Swal.fire({
                             icon: 'info',
                             text: 'There is no room with this name',
                             confirmButtonColor: '#3085d6',
                         });
                         clearSearchInput();
-                    }
-                    else if (response.status === 409){
+                    } else if (response.status === 409) {
                         let room = document.getElementById(`${roomName}`);
                         clearSearchInput();
                         room.click();
-                    }
-                    else if (response.status === 200){
+                    } else if (response.status === 200) {
                         Swal.fire({
-                          title: 'Do you want to join?',
-                          text: `Room ${roomName} exists, Do you wanna join?`,
-                          icon: 'warning',
-                          showCancelButton: true,
-                          confirmButtonColor: '#3085d6',
-                          cancelButtonColor: '#d33',
-                          confirmButtonText: 'Yes, Join!'
+                            title: 'Do you want to join?',
+                            text: `Room ${roomName} exists, Do you wanna join?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes, Join!'
                         }).then((result) => {
-                            if (result.isConfirmed){
+                            if (result.isConfirmed) {
                                 $.ajax({
                                     url: '{% url "chat:join-room" %}',
                                     type: 'POST',
                                     data: {
                                         'room_name': roomName,
                                     },
-                                     beforeSend: function (xhr) {
+                                    beforeSend: function (xhr) {
                                         xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
                                     },
-                                    success: function (response){
-                                        if (response.status === 200){
+                                    success: function (response) {
+                                        if (response.status === 200) {
                                             window.location.reload();
                                             clearSearchInput();
-                                        }
-                                        else if (response.status === 400){
+                                        } else if (response.status === 400) {
                                             Swal.fire({
                                                 text: 'Somethon went Wrong, try again!',
                                                 confirmButtonColor: '#3085d6',
@@ -254,13 +229,13 @@
         inputGroup.style.borderRadius = '17px';
     }
 
-    function clearSearchInput(){
+    function clearSearchInput() {
         searchInput.value = '';
         searchInput.focus();
     }
 
     // ----------REMOVE ROOM
-    function removeRoom(roomName){
+    function removeRoom(roomName) {
         Swal.fire({
             title: 'Are you sure ?',
             text: `Do you want to exit ${roomName} room ?`,
@@ -270,24 +245,23 @@
             cancelButtonColor: '#d33',
             confirmButtonText: 'Yes, Exit!',
         }).then((result) => {
-            if (result.isConfirmed){
+            if (result.isConfirmed) {
                 $.ajax({
                     url: '{% url "chat:remove-room" %}',
                     data: {
                         'room_name': roomName
                     },
-                    success: function (response){
-                        if (response.status === 200){
+                    success: function (response) {
+                        if (response.status === 200) {
                             window.location.reload();
-                        }
-                        else if (response.status === 400){
+                        } else if (response.status === 400) {
                             Swal.fire({
                                 text: 'Somethon went Wrong, try again!',
                                 confirmButtonColor: '#3085d6',
                             });
                         }
                     },
-                    error: function (error){
+                    error: function (error) {
                         Swal.fire({
                             icon: 'error',
                             title: error.code,
@@ -301,4 +275,4 @@
         })
     }
 </script>
-</html>
+{% endblock %}
