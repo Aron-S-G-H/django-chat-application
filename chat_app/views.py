@@ -35,7 +35,9 @@ class RoomView(LoginRequiredMixin, View):
 
     def get(self, request, room_name):
         username = request.user.username
+        chat_model = ChatRoom.objects.get(room_name=room_name)
         context = {
+            'room_image': chat_model.room_image,
             'room_name': room_name,
             'username': mark_safe(json.dumps(username)),
         }

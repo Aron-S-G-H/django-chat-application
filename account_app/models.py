@@ -5,7 +5,6 @@ from .managers import UserManager
 
 class User(AbstractUser):
     email = models.EmailField(unique=True, null=True)
-    profile_picture = models.ImageField(upload_to='user-profile', null=True, blank=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ['first_name', 'last_name', 'email']

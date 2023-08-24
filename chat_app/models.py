@@ -5,6 +5,7 @@ from account_app.models import User
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=50, unique=True)
     members = models.ManyToManyField(User)
+    room_image = models.ImageField(upload_to='room-image', blank=True, null=True)
 
     def __str__(self):
         return self.room_name
