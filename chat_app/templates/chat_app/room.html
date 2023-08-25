@@ -1,251 +1,286 @@
 {% extends 'templates/base.html' %}
 {% load static %}
 {% block main %}
-<div class="col-md-8 col-xl-6 chat">
-    <div class="card" id="conversation">
-        <div class="card-header msg_head">
-            <div class="d-flex bd-highlight">
-                <div class="img_cont">
-                    {% if room_image %}
-                        <img src="{{ room_image.url }}" class="rounded-circle user_img" alt="image">
-                    {% else %}
-                        <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img" alt="image">
-                    {% endif %}
-                    <span class="online_icon"></span>
-                </div>
-                <div class="user_info">
-                    <span>{{ room_name }}</span>
-                    <p>1767 Messages</p>
-                </div>
-                <div class="video_cam">
-                    <span><i class="fas fa-video"></i></span>
-                    <span><i class="fas fa-phone"></i></span>
-                </div>
-            </div>
-            <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
-            <div class="action_menu">
-                <ul>
-                    <li><i class="fas fa-user-circle"></i> View profile</li>
-                    <li><i class="fas fa-users"></i>Change room icon</li>
-                    <li><i class="fas fa-plus"></i> Add to group</li>
-                    <li><i class="fas fa-ban"></i> Block</li>
-                </ul>
-            </div>
+    <div class="col-md-8 col-xl-6 chat">
+        <div class="text-center mb-3">
+            <a href="{% url 'chat:lobby' %}" class="btn badge-secondary">Back to lobby</a>
         </div>
-
-        <div class="card-body msg_card_body"></div>
-
-        <div class="card-footer">
-            <div class="input-group">
-                <div class="input-group-append">
-                    <label for="fileInput" class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></label>
-                    <input type="file" id="fileInput" name="image" class="d-none">
+        <div class="card" id="conversation">
+            <div class="card-header msg_head">
+                <div class="d-flex bd-highlight">
+                    <div class="img_cont">
+                        {% if room_image %}
+                            <img src="{{ chat_model.room_image.url }}" class="rounded-circle user_img" alt="image">
+                        {% else %}
+                            <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img" alt="image">
+                        {% endif %}
+                    </div>
+                    <div class="user_info">
+                        <span>{{ room_name }}</span>
+                        {% with memberNum=chat_model.members.count %}
+                            {% if memberNum > 1 %}
+                                <p>{{ memberNum }} Members</p>
+                            {% else %}
+                                <p>{{ memberNum }} Member</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="video_cam">
+                        <span><i class="fas fa-video"></i></span>
+                        <span><i class="fas fa-phone"></i></span>
+                    </div>
                 </div>
-                <textarea id="chat-message-input" class="form-control type_msg"
-                          placeholder="Type your message..."></textarea>
-                <div class="input-group-append">
-                    <span id="chat-message-submit" class="input-group-text send_btn"><i
-                            class="fas fa-location-arrow"></i></span>
+                <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
+                <div class="action_menu">
+                    <ul>
+                        <li><i class="fas fa-recycle"></i>Clear history</li>
+                        <li><i class="fas fa-users"></i>Change room icon</li>
+                        <li><i class="fas fa-plus"></i>Room ID</li>
+                        {% if request.user == chat_model.creator %}
+                            <li><i class="fas fa-"></i>Delete room</li>
+                        {% else %}
+                             <li><i class="fas fa-"></i>Left room</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-body msg_card_body"></div>
+
+            <div class="card-footer">
+                <div class="input-group">
+                    <div class="input-group-append">
+                        <label for="fileInput" class="input-group-text attach_btn"><i
+                                class="fas fa-paperclip"></i></label>
+                        <input type="file" id="fileInput" name="image" class="d-none">
+                    </div>
+                    <textarea id="chat-message-input" class="form-control type_msg"
+                              placeholder="Type your message..."></textarea>
+                    <div class="input-group-append">
+                    <span id="chat-message-submit" class="input-group-text send_btn">
+                        <i class="fas fa-location-arrow"></i></span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{{ room_name|json_script:"room-name" }}
-<script>
-    let roomName = JSON.parse(document.getElementById('room-name').textContent);
-    let username = {{ username }};
-    let messageBody = document.querySelector('.msg_card_body');
+    {{ room_name|json_script:"room-name" }}
+    <script>
+        let roomName = JSON.parse(document.getElementById('room-name').textContent);
+        let username = {{ username }};
+        let messageBody = document.querySelector('.msg_card_body');
 
-    const chatSocket = new ReconnectingWebSocket(
-        'ws://'
-        + window.location.host
-        + '/ws/chat/'
-        + roomName
-        + '/'
-    );
+        const chatSocket = new ReconnectingWebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/chat/'
+            + roomName
+            + '/'
+        );
 
-    chatSocket.onopen = function (e) {
-        chatSocket.send(JSON.stringify({
-            'command': 'fetch_message',
-            'roomName': roomName,
-        }));
-    }
+        chatSocket.onopen = function (e) {
+            chatSocket.send(JSON.stringify({
+                'command': 'fetch_message',
+                'roomName': roomName,
+            }));
+        }
 
-    chatSocket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-        if (data['command'] === 'fetch_message') {
-            for (let item of data['message']){
-               fetchMessage(item);
+        chatSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+            if (data['command'] === 'fetch_message') {
+                for (let item of data['message']) {
+                    fetchMessage(item);
+                }
+            } else if (data['command'] === 'new_message') {
+                createMessage(data)
+            } else if (data['command'] === 'info') {
+                infoMessage(data)
             }
-        } else if (data['command'] === 'new_message') {
-            createMessage(data)
+        };
+
+        chatSocket.onclose = function (e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function (e) {
+            if (e.key === 'Enter') {
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        function readFile() {
+            if (this.files && this.files[0]) {
+                let FR = new FileReader();
+                FR.addEventListener('load', event => {
+                    chatSocket.send(JSON.stringify({
+                        'image': event.target.result,
+                        'command': 'new_message',
+                        'username': username,
+                        'roomName': roomName,
+                    }));
+                })
+                FR.readAsDataURL(this.files[0])
+            }
         }
-    };
 
-    chatSocket.onclose = function (e) {
-        console.error('Chat socket closed unexpectedly');
-    };
+        let attachBtn = document.getElementById('fileInput');
+        attachBtn.addEventListener('change', readFile)
 
-    document.querySelector('#chat-message-input').focus();
-    document.querySelector('#chat-message-input').onkeyup = function (e) {
-        if (e.key === 'Enter') {  // enter, return
-            document.querySelector('#chat-message-submit').click();
-        }
-    };
+        document.querySelector('#chat-message-submit').onclick = function (e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'command': 'new_message',
+                'username': username,
+                'roomName': roomName,
+            }));
+            messageInputDom.value = '';
+        };
 
-    function readFile (){
-        if (this.files && this.files[0]){
-            let FR = new FileReader();
-            FR.addEventListener('load', event => {
-                chatSocket.send(JSON.stringify({
-                    'image': event.target.result,
-                    'command': 'new_message',
-                    'username': username,
-                    'roomName': roomName,
-                }));
-            })
-            FR.readAsDataURL(this.files[0])
-        }
-    }
-    let attachBtn = document.getElementById('fileInput');
-    attachBtn.addEventListener('change', readFile)
-
-    document.querySelector('#chat-message-submit').onclick = function (e) {
-        const messageInputDom = document.querySelector('#chat-message-input');
-        const message = messageInputDom.value;
-        chatSocket.send(JSON.stringify({
-            'message': message,
-            'command': 'new_message',
-            'username': username,
-            'roomName': roomName,
-        }));
-        messageInputDom.value = '';
-    };
-
-    function createMessage(data){
-        let command = data['command'];
-        let author = data['__str__'];
-        let content = data['content'];
-        let createDate = new Date(data['created_at']);
-        let date = createDate.getDate();
-        let month = createDate.getMonth();
-        let year = createDate.getFullYear();
-        let hour = createDate.getHours();
-        let min = createDate.getMinutes();
-        let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
-        if (author === username){
-            if (command === 'image'){
-                messageBody.insertAdjacentHTML('beforeend',
-                    `<div class="d-flex justify-content-end mb-4">
+        function createMessage(data) {
+            let command = data['command'];
+            let author = data['__str__'];
+            let content = data['content'];
+            let createDate = new Date(data['created_at']);
+            let date = createDate.getDate();
+            let month = createDate.getMonth();
+            let year = createDate.getFullYear();
+            let hour = createDate.getHours();
+            let min = createDate.getMinutes();
+            let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
+            if (author === username) {
+                if (command === 'image') {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-end mb-4">
                         <span class="msg_time_send">${dateFormat}</span>
                         <div class="msg_cotainer_send_img">
                             <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
                         </div>
                     </div>`
-                )
-            } else {
-               messageBody.insertAdjacentHTML('beforeend',
-                   `<div class="d-flex justify-content-end mb-4">
+                    )
+                } else {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-end mb-4">
                         <span class="msg_time_send">${dateFormat}</span>
                         <div class="msg_cotainer_send">
                             ${content}
                         </div>
                    </div>`
-               )
-           }
+                    )
+                }
 
-        }
-       else {
-           if (command === 'image'){
-               messageBody.insertAdjacentHTML('beforeend',
-                   `<div class="d-flex justify-content-start mb-4">
+            } else {
+                if (command === 'image') {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-start mb-4">
                         <div class="msg_cotainer_img">
                             <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
                         </div>
                         <span class="msg_time">${dateFormat}</span>
                    </div>`
-               )
-           } else {
-               messageBody.insertAdjacentHTML('beforeend',
-                   `<div class="d-flex justify-content-start mb-4">
+                    )
+                } else {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-start mb-4">
                         <div class="msg_cotainer">
                             ${content}
                         </div>
                         <span class="msg_time">${dateFormat}</span>
                    </div>`
-               )
-           }
+                    )
+                }
 
-       }
-    }
-
-    function fetchMessage(data){
-        let content;
-        if(data.hasOwnProperty('image')){
-            content = data['image'];
-        } else {
-            content = data['content'];
+            }
         }
-        let author = data['__str__'];
-        let createDate = new Date(data['created_at']);
-        let date = createDate.getDate();
-        let month = createDate.getMonth();
-        let year = createDate.getFullYear();
-        let hour = createDate.getHours();
-        let min = createDate.getMinutes();
-        let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
-        if (author === username){
-            if (data.hasOwnProperty('image')){
-                messageBody.insertAdjacentHTML('beforeend',
-                    `<div class="d-flex justify-content-end mb-4">
+
+        function fetchMessage(data) {
+            let content;
+            if (data.hasOwnProperty('image')) {
+                content = data['image'];
+            } else {
+                content = data['content'];
+            }
+            let author = data['__str__'];
+            let createDate = new Date(data['created_at']);
+            let date = createDate.getDate();
+            let month = createDate.getMonth();
+            let year = createDate.getFullYear();
+            let hour = createDate.getHours();
+            let min = createDate.getMinutes();
+            let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
+            if (author === username) {
+                if (data.hasOwnProperty('image')) {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-end mb-4">
                         <span class="msg_time_send">${dateFormat}</span>
                         <div class="msg_cotainer_send_img">
                             <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
                         </div>
                     </div>`
-                )
-            } else {
-               messageBody.insertAdjacentHTML('beforeend',
-                   `<div class="d-flex justify-content-end mb-4">
+                    )
+                } else {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-end mb-4">
                         <span class="msg_time_send">${dateFormat}</span>
                         <div class="msg_cotainer_send">
                             ${content}
                         </div>
                    </div>`
-               )
-           }
+                    )
+                }
 
-        }
-       else {
-           if (data.hasOwnProperty('image')){
-               messageBody.insertAdjacentHTML('beforeend',
-                   `<div class="d-flex justify-content-start mb-4">
+            } else {
+                if (data.hasOwnProperty('image')) {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-start mb-4">
                         <div class="msg_cotainer_img">
                             <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
                         </div>
                         <span class="msg_time">${dateFormat}</span>
                    </div>`
-               )
-           } else {
-               messageBody.insertAdjacentHTML('beforeend',
-                   `<div class="d-flex justify-content-start mb-4">
+                    )
+                } else {
+                    messageBody.insertAdjacentHTML('beforeend',
+                        `<div class="d-flex justify-content-start mb-4">
                         <div class="msg_cotainer">
                             ${content}
                         </div>
                         <span class="msg_time">${dateFormat}</span>
                    </div>`
-               )
-           }
+                    )
+                }
 
-       }
-    }
+            }
+        }
 
-    $(document).ready(function () {
-        $('#action_menu_btn').click(function () {
-            $('.action_menu').toggle();
+        function infoMessage(data) {
+            let dataType = data['content']['type'];
+            let message = data['content']['message'];
+            if (dataType === 'join' || dataType === 'left'){
+                messageBody.insertAdjacentHTML('beforeend',
+                `<div class="d-flex justify-content-center mb-4" style="background-color: #575757">
+                    <div class="msg_cotainer_info">
+                       ${message}
+                    </div>
+                </div>`
+                )
+            } else {
+                Swal.fire({
+                    text: 'This room deleted by the creator',
+                    confirmButtonColor: '#3085d6',
+                }).then(() => {
+                    window.location.replace('{% url "chat:lobby" %}')
+                })
+            }
+        }
+
+        $(document).ready(function () {
+            $('#action_menu_btn').click(function () {
+                $('.action_menu').toggle();
+            });
         });
-    });
-</script>
-{% endblock%}
+    </script>
+{% endblock %}
 

@@ -142,6 +142,13 @@ body, html {
 }
 
 .offline {
+        position: absolute;
+    height: 15px;
+    width: 15px;
+    border-radius: 50%;
+    bottom: 0.2em;
+    right: 0.4em;
+    border: 1.5px solid white;
     background-color: #c23616 !important;
 }
 
@@ -157,7 +164,7 @@ body, html {
 }
 
 .user_info p {
-    font-size: 10px;
+    font-size: 12px;
     color: rgba(255, 255, 255, 0.6);
 }
 
@@ -198,6 +205,14 @@ body, html {
     padding: 10px;
     position: relative;
     max-width: 60%;
+}
+.msg_cotainer_info {
+    margin-top: auto;
+    margin-bottom: auto;
+    border-radius: 25px;
+    position: relative;
+    max-width: 60%;
+    color: white;
 }
 .msg_cotainer_send_img {
     margin-top: auto;

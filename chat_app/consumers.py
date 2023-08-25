@@ -5,8 +5,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .serializer import MessageSerializer
 import base64
-import io
-from PIL import Image
 from django.core.files.base import ContentFile
 from.models import Message, ChatRoom
 
@@ -23,8 +21,6 @@ def new_message_query(username, room_name, message=None, image=None):
         format, imgstr = image.split(';base64,')
         ext = format.split('/')[-1]
         data = ContentFile(base64.b64decode(imgstr), name='image')
-        # decoded_file = base64.b64decode(image)
-        # image_file = open(decoded_file)
         model.image.save('image.jpg', data)
         model.save()
     return model
@@ -64,25 +60,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }
         await self.chat_message(content)
 
-    # async def image(self, data):
-    #     # image = data.get('image', None)
-    #     username = data.get('username', None)
-    #     room_name = data.get('roomName', None)
-    #     create_new_image = await database_sync_to_async(new_message_query)(username, room_name, image)
-    #     new_message_json = await self.message_serializer(create_new_image)
-    #     result = eval(new_message_json)
-    #     await self.send_to_chat_message({
-    #         'command': 'image',
-    #         'result': result,
-    #     })
-
     async def message_serializer(self, query):
         serialized_message = MessageSerializer(query, many=(lambda query: True if (query.__class__.__name__ == 'QuerySet') else False)(query))
         message_json = JSONRenderer().render(serialized_message.data)
         return message_json
 
     async def disconnect(self, code):
-        # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name, self.channel_name
         )
@@ -94,9 +77,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.commands[command](self, text_data_dict)
 
     async def send_to_chat_message(self, data):
-        print(data)
         command = data.get('command')
-        # Send message to room group
         await self.channel_layer.group_send(self.room_group_name, {
             "type": "chat_message",
             "content": (lambda content: data['result']['image'] if(command == 'image') else data['result']['content'])(command),

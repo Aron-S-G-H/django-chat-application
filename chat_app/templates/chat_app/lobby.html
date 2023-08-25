@@ -3,6 +3,7 @@
 {% block main %}
     <div class="col-md-4 col-xl-3 chat">
         <div class="card mb-sm-3 mb-md-0 contacts_card">
+
             <div class="card-header">
                 <div class="input-group">
                     <input type="text" placeholder="Search..." id="searchInput" class="form-control search">
@@ -11,26 +12,35 @@
                     </div>
                 </div>
             </div>
+
             {% if chat_rooms %}
                 <div class="card-body contacts_body">
                     <ul class="contacts">
                         {% for room in chat_rooms %}
                             <li class="d-flex justify-content-between">
-                                <a href="{% url 'chat:room' room.room_name %}" class="rooms" id="{{ room.room_name }}">
+                                <a href="{% url 'chat:room' room.slug %}" class="rooms" id="{{ room.room_name }}">
                                     <div class="d-flex bd-highlight">
                                         <div class="img_cont">
                                             {% if room.room_image %}
-                                                <img src="{{ room.room_image.url }}" class="rounded-circle user_img"
-                                                     alt="Icon">
+                                                <img src="{{ room.room_image.url }}" class="rounded-circle user_img" alt="Icon">
                                             {% else %}
-                                                <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img"
-                                                     alt="Icon">
+                                                <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img" alt="Icon">
                                             {% endif %}
-                                            <span class="online_icon"></span>
+                                            {% with memeberNum=room.members.count %}
+                                                {% if memeberNum > 1 %}
+                                                    <span class="online_icon"></span>
+                                                {% else %}
+                                                    <span class="offline"></span>
+                                                {% endif %}
                                         </div>
                                         <div class="user_info">
                                             <span>{{ room.room_name.capitalize }}</span>
-                                            <p>Kalid is online</p>
+                                                {% if memeberNum > 1 %}
+                                                    <p>{{ memeberNum }} Members</p>
+                                                {% else %}
+                                                    <p >{{ memeberNum }} Member</p>
+                                                {% endif %}
+                                            {% endwith %}
                                         </div>
                                     </div>
                                 </a>
