@@ -9,32 +9,37 @@ from django.core.files.base import ContentFile
 from.models import Message, ChatRoom
 
 
-def fetch_message_query(room_name):
-    return Message.objects.filter(chat_room__room_name=room_name).select_related('author', 'chat_room')
+def image_fixer(image_data):
+    format, imgstr = image_data.split(';base64,')
+    ext = format.split('/')[-1]
+    data = ContentFile(base64.b64decode(imgstr), name='image')
+    return data
 
 
 def new_message_query(username, room_name, message=None, image=None):
     user = User.objects.get(username=username)
     chat_room = ChatRoom.objects.get(room_name=room_name)
-    model = Message.objects.create(author=user, content=message, chat_room=chat_room)
+    massage_model = Message.objects.create(author=user, content=message, chat_room=chat_room)
     if image:
-        format, imgstr = image.split(';base64,')
-        ext = format.split('/')[-1]
-        data = ContentFile(base64.b64decode(imgstr), name='image')
-        model.image.save('image.jpg', data)
-        model.save()
-    return model
+        data = image_fixer(image)
+        massage_model.image.save('image.jpg', data)
+        massage_model.save()
+    return massage_model
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"chat_{self.room_name}"
+        self.user = self.scope['user']
 
-        await self.channel_layer.group_add(
-            self.room_group_name, self.channel_name
-        )
-        await self.accept()
+        if self.user.is_authenticated:
+            await self.channel_layer.group_add(
+                self.room_group_name, self.channel_name
+            )
+            await self.accept()
+        else:
+            await self.disconnect(403)
 
     async def new_message(self, data):
         message = data.get('message', None)
@@ -43,25 +48,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room_name = data.get('roomName', None)
         create_new_message = await database_sync_to_async(new_message_query)(username, room_name, message, image)
         new_message_json = await self.message_serializer(create_new_message)
-        result = eval(new_message_json)
+        result = eval(new_message_json)  # REMOVE BYTE STRING
         if image:
             context = {'command': 'image', 'result': result}
         else:
             context = {'command': 'new_message', 'result': result}
         await self.send_to_chat_message(context)
 
-    async def fetch_message(self, data):
-        room_name = data['roomName']
-        message_query = await database_sync_to_async(fetch_message_query)(room_name)
-        message_json = await self.message_serializer(message_query)
-        content = {
-            'message': eval(message_json),
-            'command': 'fetch_message',
-        }
-        await self.chat_message(content)
-
     async def message_serializer(self, query):
-        serialized_message = MessageSerializer(query, many=(lambda query: True if (query.__class__.__name__ == 'QuerySet') else False)(query))
+        serialized_message = MessageSerializer(query)
         message_json = JSONRenderer().render(serialized_message.data)
         return message_json
 
@@ -91,6 +86,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     commands = {
         'new_message': new_message,
-        'fetch_message': fetch_message,
     }
 

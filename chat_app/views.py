@@ -4,9 +4,10 @@ from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
 import json
-from .models import ChatRoom
+from .models import ChatRoom, Message
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.contrib.auth.decorators import login_required
 
 
 class LobbyView(LoginRequiredMixin, View):
@@ -14,10 +15,11 @@ class LobbyView(LoginRequiredMixin, View):
 
     def get(self, request):
         user = request.user
-        chat_rooms = ChatRoom.objects.filter(members=user).prefetch_related('members').defer('members')
+        chat_rooms = ChatRoom.objects.filter(members=user).prefetch_related('members')
         return render(request, 'chat_app/lobby.html', {'chat_rooms': chat_rooms, 'user': user})
 
     def post(self, request):
+        # post method for checking room existence and user - used for search room feature
         room_name = request.POST.get('room_name', None)
         user = request.user
         if room_name and user:
@@ -38,7 +40,9 @@ class RoomView(LoginRequiredMixin, View):
     def get(self, request, room_slug):
         username = request.user.username
         chat_model = ChatRoom.objects.get(slug=room_slug)
+        message_model = Message.objects.filter(chat_room=chat_model).select_related('chat_room', 'author')
         context = {
+            'message_model': message_model,
             'chat_model': chat_model,
             'room_name': chat_model.room_name,
             'username': mark_safe(json.dumps(username)),
@@ -46,10 +50,9 @@ class RoomView(LoginRequiredMixin, View):
         return render(request, 'chat_app/room.html', context=context)
 
 
-class CreateRoomView(LoginRequiredMixin, View):
-    login_url = 'account:login'
-
-    def post(self, request):
+@login_required(login_url='account:login')
+def create_room_view(request):
+    if request.method == 'POST':
         user = request.user
         room_name = request.POST.get('room_name', None)
         if not room_name:
@@ -62,6 +65,7 @@ class CreateRoomView(LoginRequiredMixin, View):
             return JsonResponse({'status': 200})
 
 
+@login_required(login_url='account:login')
 def join_room(request):
     if request.method == 'POST':
         user = request.user
@@ -82,6 +86,7 @@ def join_room(request):
     return JsonResponse({'status': 400})
 
 
+@login_required(login_url='account:login')
 def remove_room(request):
     room_name = request.GET.get('room_name', None)
     user = request.user

@@ -39,13 +39,48 @@
                         {% if request.user == chat_model.creator %}
                             <li><i class="fas fa-"></i>Delete room</li>
                         {% else %}
-                             <li><i class="fas fa-"></i>Left room</li>
+                            <li><i class="fas fa-"></i>Left room</li>
                         {% endif %}
                     </ul>
                 </div>
             </div>
 
-            <div class="card-body msg_card_body"></div>
+            <div class="card-body msg_card_body">
+                {% if message_model %}
+                    {% for message in message_model %}
+                        {% if message.author.username == request.user.username %}
+                            {% if message.content %}
+                                <div class="d-flex justify-content-end mb-4">
+                                    <span class="msg_time_send">{{ message.created_at }}</span>
+                                    <div class="msg_cotainer_send">{{ message.content }}</div>
+                                </div>
+                            {% else %}
+                                <div class="d-flex justify-content-end mb-4">
+                                    <span class="msg_time_send">{{ message.created_at }}</span>
+                                    <div class="msg_cotainer_send_img">
+                                        <img src="{{ message.image.url }}" alt="image"
+                                             style="width: 130px; border-radius: 50%">
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            {% if message.content %}
+                                <div class="d-flex justify-content-start mb-4">
+                                    <div class="msg_cotainer">{{ message.content }}</div>
+                                    <span class="msg_time">{{ message.created_at }}</span>
+                                </div>
+                            {% else %}
+                                <div class="d-flex justify-content-start mb-4">
+                                    <div class="msg_cotainer_img">
+                                        <img src="{{ message.image.url }}" alt="image" style="width: 130px; border-radius: 50%">
+                                    </div>
+                                    <span class="msg_time">{{ message.created_at }}</span>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
 
             <div class="card-footer">
                 <div class="input-group">
@@ -78,20 +113,9 @@
             + '/'
         );
 
-        chatSocket.onopen = function (e) {
-            chatSocket.send(JSON.stringify({
-                'command': 'fetch_message',
-                'roomName': roomName,
-            }));
-        }
-
         chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
-            if (data['command'] === 'fetch_message') {
-                for (let item of data['message']) {
-                    fetchMessage(item);
-                }
-            } else if (data['command'] === 'new_message') {
+            if (data['command'] === 'new_message' || data['command'] === 'image') {
                 createMessage(data)
             } else if (data['command'] === 'info') {
                 infoMessage(data)
@@ -195,72 +219,12 @@
             }
         }
 
-        function fetchMessage(data) {
-            let content;
-            if (data.hasOwnProperty('image')) {
-                content = data['image'];
-            } else {
-                content = data['content'];
-            }
-            let author = data['__str__'];
-            let createDate = new Date(data['created_at']);
-            let date = createDate.getDate();
-            let month = createDate.getMonth();
-            let year = createDate.getFullYear();
-            let hour = createDate.getHours();
-            let min = createDate.getMinutes();
-            let dateFormat = `${year}/${month}/${date} - ${hour}:${min}`;
-            if (author === username) {
-                if (data.hasOwnProperty('image')) {
-                    messageBody.insertAdjacentHTML('beforeend',
-                        `<div class="d-flex justify-content-end mb-4">
-                        <span class="msg_time_send">${dateFormat}</span>
-                        <div class="msg_cotainer_send_img">
-                            <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
-                        </div>
-                    </div>`
-                    )
-                } else {
-                    messageBody.insertAdjacentHTML('beforeend',
-                        `<div class="d-flex justify-content-end mb-4">
-                        <span class="msg_time_send">${dateFormat}</span>
-                        <div class="msg_cotainer_send">
-                            ${content}
-                        </div>
-                   </div>`
-                    )
-                }
-
-            } else {
-                if (data.hasOwnProperty('image')) {
-                    messageBody.insertAdjacentHTML('beforeend',
-                        `<div class="d-flex justify-content-start mb-4">
-                        <div class="msg_cotainer_img">
-                            <img src="${content}" alt="image" style="width: 130px; border-radius: 50%">
-                        </div>
-                        <span class="msg_time">${dateFormat}</span>
-                   </div>`
-                    )
-                } else {
-                    messageBody.insertAdjacentHTML('beforeend',
-                        `<div class="d-flex justify-content-start mb-4">
-                        <div class="msg_cotainer">
-                            ${content}
-                        </div>
-                        <span class="msg_time">${dateFormat}</span>
-                   </div>`
-                    )
-                }
-
-            }
-        }
-
         function infoMessage(data) {
             let dataType = data['content']['type'];
             let message = data['content']['message'];
-            if (dataType === 'join' || dataType === 'left'){
+            if (dataType === 'join' || dataType === 'left') {
                 messageBody.insertAdjacentHTML('beforeend',
-                `<div class="d-flex justify-content-center mb-4" style="background-color: #575757">
+                    `<div class="d-flex justify-content-center mb-4" style="background-color: #575757">
                     <div class="msg_cotainer_info">
                        ${message}
                     </div>

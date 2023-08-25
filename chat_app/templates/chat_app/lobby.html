@@ -20,13 +20,13 @@
                             <li class="d-flex justify-content-between">
                                 <a href="{% url 'chat:room' room.slug %}" class="rooms" id="{{ room.room_name }}">
                                     <div class="d-flex bd-highlight">
+                                    {% with memeberNum=room.members.count %}
                                         <div class="img_cont">
                                             {% if room.room_image %}
                                                 <img src="{{ room.room_image.url }}" class="rounded-circle user_img" alt="Icon">
                                             {% else %}
                                                 <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img" alt="Icon">
                                             {% endif %}
-                                            {% with memeberNum=room.members.count %}
                                                 {% if memeberNum > 1 %}
                                                     <span class="online_icon"></span>
                                                 {% else %}
@@ -40,8 +40,8 @@
                                                 {% else %}
                                                     <p >{{ memeberNum }} Member</p>
                                                 {% endif %}
-                                            {% endwith %}
                                         </div>
+                                    {% endwith %}
                                     </div>
                                 </a>
                                 <a href="#" onclick="removeRoom('{{ room.room_name }}')"
@@ -62,10 +62,7 @@
                 </div>
             {% endif %}
             <div class="card-footer text-center">
-                <a href="#" class="text-warning" id="createRoom">
-                    Create new Room
-                    <i class="fas fa-plus"></i>
-                </a>
+                <a href="#" class="text-warning" id="createRoom">Create new Room<i class="fas fa-plus"></i></a>
             </div>
         </div>
     </div>

@@ -20,7 +20,7 @@ class ChatRoom(models.Model):
 
 
 class Message(models.Model):
-    chat_room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, null=True)
+    chat_room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, null=True, related_name='messages')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.CharField(max_length=255, blank=True, null=True)
     image = models.ImageField(blank=True,  null=True, upload_to='image-message')
