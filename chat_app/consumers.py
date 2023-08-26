@@ -3,7 +3,7 @@ from channels.db import database_sync_to_async
 from account_app.models import User
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
-from .serializer import MessageSerializer
+from .serializer import MessageSerializer, ChatRoomSerializer
 import base64
 from django.core.files.base import ContentFile
 from.models import Message, ChatRoom
@@ -25,6 +25,14 @@ def new_message_query(username, room_name, message=None, image=None):
         massage_model.image.save('image.jpg', data)
         massage_model.save()
     return massage_model
+
+
+def room_icon_query(room_name, image_data):
+    chat_room = ChatRoom.objects.get(room_name=room_name)
+    image = image_fixer(image_data)
+    chat_room.room_image.save('image.jpg', image)
+    chat_room.save()
+    return chat_room
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -55,10 +63,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
             context = {'command': 'new_message', 'result': result}
         await self.send_to_chat_message(context)
 
+    async def change_icon(self, data):
+        username = data.get('username', None)
+        room_name = data.get('roomName', None)
+        image_data = data.get('image', None)
+        change_room_icon = await database_sync_to_async(room_icon_query)(room_name, image_data)
+        room_icon_json = await self.room_icon_serializer(change_room_icon)
+        result = eval(room_icon_json)
+        context = {'command': 'change_icon', 'result': result}
+        await self.send_to_chat_message(context)
+        await self.channel_layer.group_send(self.room_group_name, {
+            'type': 'chat_message',
+            'command': 'info',
+            'content': {'type': 'changeIcon', 'message': f'{username} changed the room icon'},
+        })
+
+
     async def message_serializer(self, query):
         serialized_message = MessageSerializer(query)
         message_json = JSONRenderer().render(serialized_message.data)
         return message_json
+
+    async def room_icon_serializer(self, query):
+        serialize_icon = ChatRoomSerializer(query)
+        icon_json = JSONRenderer().render(serialize_icon.data)
+        return icon_json
 
     async def disconnect(self, code):
         await self.channel_layer.group_discard(
@@ -73,18 +102,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def send_to_chat_message(self, data):
         command = data.get('command')
-        await self.channel_layer.group_send(self.room_group_name, {
-            "type": "chat_message",
-            "content": (lambda content: data['result']['image'] if(command == 'image') else data['result']['content'])(command),
-            "__str__": data['result']['__str__'],
-            "created_at": data['result']['created_at'],
-            'command': command,
-        })
+        if command == 'image' or command == 'new_message':
+            await self.channel_layer.group_send(self.room_group_name, {
+                "type": "chat_message",
+                "content": (lambda content: data['result']['image'] if(command == 'image') else data['result']['content'])(command),
+                "__str__": data['result']['__str__'],
+                "created_at": data['result']['created_at'],
+                'command': command,
+            })
+        elif command == 'change_icon':
+            await self.channel_layer.group_send(self.room_group_name, {
+                'type': 'chat_message',
+                'content': data['result']['room_image'],
+                'command': command,
+            })
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event))
 
     commands = {
         'new_message': new_message,
+        'change_icon': change_icon,
     }
 

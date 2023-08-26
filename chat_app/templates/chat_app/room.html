@@ -9,7 +9,7 @@
             <div class="card-header msg_head">
                 <div class="d-flex bd-highlight">
                     <div class="img_cont">
-                        {% if room_image %}
+                        {% if chat_model.room_image %}
                             <img src="{{ chat_model.room_image.url }}" class="rounded-circle user_img" alt="image">
                         {% else %}
                             <img src="{% static 'chat-icon.png' %}" class="rounded-circle user_img" alt="image">
@@ -34,7 +34,12 @@
                 <div class="action_menu">
                     <ul>
                         <li><i class="fas fa-recycle"></i>Clear history</li>
-                        <li><i class="fas fa-users"></i>Change room icon</li>
+                        <li>
+                            <label for="iconInput" style="cursor: pointer">
+                                <i class="fas fa-users"></i>Change room icon
+                            </label>
+                            <input type="file" id="iconInput" name="image" class="d-none">
+                        </li>
                         <li><i class="fas fa-plus"></i>Room ID</li>
                         {% if request.user == chat_model.creator %}
                             <li><i class="fas fa-"></i>Delete room</li>
@@ -86,8 +91,8 @@
             <div class="card-footer">
                 <div class="input-group">
                     <div class="input-group-append">
-                        <label for="fileInput" class="input-group-text attach_btn"><i
-                                class="fas fa-paperclip"></i></label>
+                        <label for="fileInput" class="input-group-text attach_btn">
+                            <i class="fas fa-paperclip"></i></label>
                         <input type="file" id="fileInput" name="image" class="d-none">
                     </div>
                     <textarea id="chat-message-input" class="form-control type_msg"
@@ -100,11 +105,14 @@
             </div>
         </div>
     </div>
+
     {{ room_name|json_script:"room-name" }}
+
     <script>
         let roomName = JSON.parse(document.getElementById('room-name').textContent);
         let username = {{ username }};
         let messageBody = document.querySelector('.msg_card_body');
+
 
         const chatSocket = new ReconnectingWebSocket(
             'ws://'
@@ -120,12 +128,15 @@
                 createMessage(data)
             } else if (data['command'] === 'info') {
                 infoMessage(data)
+            } else if (data['command'] === 'change_icon') {
+                changeIcon(data)
             }
         };
 
         chatSocket.onclose = function (e) {
             console.error('Chat socket closed unexpectedly');
         };
+
 
         document.querySelector('#chat-message-input').focus();
         document.querySelector('#chat-message-input').onkeyup = function (e) {
@@ -134,23 +145,36 @@
             }
         };
 
+
         function readFile() {
             if (this.files && this.files[0]) {
                 let FR = new FileReader();
                 FR.addEventListener('load', event => {
-                    chatSocket.send(JSON.stringify({
-                        'image': event.target.result,
-                        'command': 'new_message',
-                        'username': username,
-                        'roomName': roomName,
-                    }));
+                    if (this.id === 'fileInput') {
+                        chatSocket.send(JSON.stringify({
+                            'image': event.target.result,
+                            'command': 'new_message',
+                            'username': username,
+                            'roomName': roomName,
+                        }));
+                    } else if (this.id === 'iconInput') {
+                        chatSocket.send(JSON.stringify({
+                            'image': event.target.result,
+                            'command': 'change_icon',
+                            'username': username,
+                            'roomName': roomName,
+                        }));
+                    }
                 })
                 FR.readAsDataURL(this.files[0])
             }
         }
 
         let attachBtn = document.getElementById('fileInput');
-        attachBtn.addEventListener('change', readFile)
+        attachBtn.addEventListener('change', readFile);
+        let changeIconInput = document.getElementById('iconInput');
+        changeIconInput.addEventListener('change', readFile)
+
 
         document.querySelector('#chat-message-submit').onclick = function (e) {
             const messageInputDom = document.querySelector('#chat-message-input');
@@ -165,6 +189,7 @@
                 messageInputDom.value = '';
             }
         };
+
 
         function createMessage(data) {
             let command = data['command'];
@@ -222,10 +247,18 @@
             }
         }
 
+
         function infoMessage(data) {
             let dataType = data['content']['type'];
             let message = data['content']['message'];
-            if (dataType === 'join' || dataType === 'left') {
+            if (dataType === 'delete') {
+                Swal.fire({
+                    text: 'This room deleted by the creator',
+                    confirmButtonColor: '#3085d6',
+                }).then(() => {
+                    window.location.replace('{% url "chat:lobby" %}')
+                })
+            } else {
                 messageBody.insertAdjacentHTML('beforeend',
                     `<div class="d-flex justify-content-center mb-4" style="background-color: #575757">
                     <div class="msg_cotainer_info">
@@ -233,15 +266,16 @@
                     </div>
                 </div>`
                 )
-            } else {
-                Swal.fire({
-                    text: 'This room deleted by the creator',
-                    confirmButtonColor: '#3085d6',
-                }).then(() => {
-                    window.location.replace('{% url "chat:lobby" %}')
-                })
             }
         }
+
+
+        function changeIcon(data) {
+            let newIcon = data['content']
+            let oldIcon = document.querySelector('.img_cont .user_img');
+            oldIcon.src = newIcon;
+        }
+
 
         $(document).ready(function () {
             $('#action_menu_btn').click(function () {
