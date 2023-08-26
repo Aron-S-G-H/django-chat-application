@@ -18,7 +18,7 @@ class LobbyView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
         chat_rooms = ChatRoom.objects.filter(members=user).prefetch_related('members')
-        return render(request, 'chat_app/lobby.html', {'chat_rooms': chat_rooms, 'user': user})
+        return render(request, 'chat_app/lobby.html', {'chat_rooms': chat_rooms})
 
     def post(self, request):
         # post method for checking room existence and user - used for search room feature

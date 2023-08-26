@@ -33,18 +33,24 @@
                 <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
                 <div class="action_menu">
                     <ul>
-                        <li><i class="fas fa-recycle"></i>Clear history</li>
                         <li>
                             <label for="iconInput" style="cursor: pointer">
-                                <i class="fas fa-users"></i>Change room icon
+                                <i class="fas fa-image"></i>Change room icon
                             </label>
                             <input type="file" id="iconInput" name="image" class="d-none">
                         </li>
-                        <li><i class="fas fa-plus"></i>Room ID</li>
+                        <li><i class="fas fa-users"></i>Members list</li>
                         {% if request.user == chat_model.creator %}
-                            <li><i class="fas fa-"></i>Delete room</li>
+                            <li id="clearHistory"><i class="fas fa-history"></i>Clear history</li>
+                            <li onclick="removeRoom('{{ chat_model.creator.username }}')">
+                                <i class="fas fa-trash"></i>
+                                Delete room
+                            </li>
                         {% else %}
-                            <li><i class="fas fa-"></i>Left room</li>
+                            <li onclick="removeRoom('{{ chat_model.creator.username }}')">
+                                <i class="fas fa-minus-circle"></i>
+                                Left room
+                            </li>
                         {% endif %}
                     </ul>
                 </div>
@@ -112,6 +118,10 @@
         let roomName = JSON.parse(document.getElementById('room-name').textContent);
         let username = {{ username }};
         let messageBody = document.querySelector('.msg_card_body');
+        let attachBtn = document.getElementById('fileInput');
+        attachBtn.addEventListener('change', readFile);
+        let changeIconInput = document.getElementById('iconInput');
+        changeIconInput.addEventListener('change', readFile)
 
 
         const chatSocket = new ReconnectingWebSocket(
@@ -169,11 +179,6 @@
                 FR.readAsDataURL(this.files[0])
             }
         }
-
-        let attachBtn = document.getElementById('fileInput');
-        attachBtn.addEventListener('change', readFile);
-        let changeIconInput = document.getElementById('iconInput');
-        changeIconInput.addEventListener('change', readFile)
 
 
         document.querySelector('#chat-message-submit').onclick = function (e) {
@@ -247,7 +252,6 @@
             }
         }
 
-
         function infoMessage(data) {
             let dataType = data['content']['type'];
             let message = data['content']['message'];
@@ -269,13 +273,57 @@
             }
         }
 
-
         function changeIcon(data) {
             let newIcon = data['content']
             let oldIcon = document.querySelector('.img_cont .user_img');
             oldIcon.src = newIcon;
         }
 
+        function removeRoom(roomCreator) {
+            let text;
+            if (roomCreator === username) {
+                text = `Do you want to delete ${roomName} room ?`
+            } else {
+                text = `Do you want to exit ${roomName} room ?`;
+            }
+            Swal.fire({
+                title: 'Are you sure ?',
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Exit!',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{% url "chat:remove-room" %}',
+                        data: {
+                            'room_name': roomName
+                        },
+                        success: function (response) {
+                            if (response.status === 200) {
+                                window.location.replace("{% url 'chat:lobby' %}")
+                            } else if (response.status === 400) {
+                                Swal.fire({
+                                    text: 'Somethon went Wrong, try again!',
+                                    confirmButtonColor: '#3085d6',
+                                });
+                            }
+                        },
+                        error: function (error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: error.code,
+                                text: 'Service encountered an error. Please try again. If the error is not resolved, contact support',
+                                confirmButtonColor: '#3085d6',
+                            });
+                            console.log(error)
+                        }
+                    })
+                }
+            })
+        }
 
         $(document).ready(function () {
             $('#action_menu_btn').click(function () {

@@ -44,7 +44,7 @@
                                     {% endwith %}
                                     </div>
                                 </a>
-                                <a href="#" onclick="removeRoom('{{ room.room_name }}')"
+                                <a href="#" onclick="removeRoom('{{ room.room_name }}', '{{ room.creator.username }}')"
                                    class="d-flex flex-column justify-content-center text-danger mr-3"
                                    style="font-size: larger">
                                     <i class="fas fa-minus"></i>
@@ -242,10 +242,17 @@
     }
 
     // ----------REMOVE ROOM
-    function removeRoom(roomName) {
+    function removeRoom(roomName, roomCreator) {
+        let text;
+        let user = '{{ request.user.username }}';
+        if (roomCreator === user){
+            text = `Do you want to delete ${roomName} room ?`
+        } else {
+            text = `Do you want to exit ${roomName} room ?`;
+        }
         Swal.fire({
             title: 'Are you sure ?',
-            text: `Do you want to exit ${roomName} room ?`,
+            text: text,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
