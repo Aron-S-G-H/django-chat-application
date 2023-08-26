@@ -1,5 +1,7 @@
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_protect
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
@@ -39,18 +41,22 @@ class RoomView(LoginRequiredMixin, View):
 
     def get(self, request, room_slug):
         username = request.user.username
-        chat_model = ChatRoom.objects.get(slug=room_slug)
-        message_model = Message.objects.filter(chat_room=chat_model).select_related('chat_room', 'author')
-        context = {
-            'message_model': message_model,
-            'chat_model': chat_model,
-            'room_name': chat_model.room_name,
-            'username': mark_safe(json.dumps(username)),
-        }
-        return render(request, 'chat_app/room.html', context=context)
+        try:
+            chat_model = ChatRoom.objects.get(slug=room_slug)
+            message_model = Message.objects.filter(chat_room=chat_model).select_related('chat_room', 'author')
+            context = {
+                'message_model': message_model,
+                'chat_model': chat_model,
+                'room_name': chat_model.room_name,
+                'username': mark_safe(json.dumps(username)),
+            }
+            return render(request, 'chat_app/room.html', context=context)
+        except ChatRoom.DoesNotExist:
+            raise ValidationError('Room does not exist, Maybe it was deleted by its creator')
 
 
 @login_required(login_url='account:login')
+@csrf_protect
 def create_room_view(request):
     if request.method == 'POST':
         user = request.user
@@ -66,6 +72,7 @@ def create_room_view(request):
 
 
 @login_required(login_url='account:login')
+@csrf_protect
 def join_room(request):
     if request.method == 'POST':
         user = request.user
@@ -77,7 +84,7 @@ def join_room(request):
                 room_group_name, {
                     'type': 'chat_message',
                     'command': 'info',
-                    'content': json.dumps({'type': 'join', 'message': f'{user.username} joined the room'}),
+                    'content': {'type': 'join', 'message': f'{user.username} joined the room'},
                 }
             )
             room = ChatRoom.objects.get(room_name=room_name)
@@ -99,7 +106,7 @@ def remove_room(request):
                 room_group_name, {
                     'type': 'chat_message',
                     'command': 'info',
-                    'content': json.dumps({'type': 'delete', 'message': 'Creator delete the room'}),
+                    'content': {'type': 'delete', 'message': 'Creator delete the room'},
                 }
             )
             chat_room.delete()
@@ -109,7 +116,7 @@ def remove_room(request):
                 room_group_name, {
                     'type': 'chat_message',
                     'command': 'info',
-                    'content': json.dumps({'type': 'left', 'message': f'{user.username} left the room'}),
+                    'content': {'type': 'left', 'message': f'{user.username} left the room'},
                 }
             )
             chat_room.members.remove(user)

@@ -51,12 +51,12 @@
                         {% if message.author.username == request.user.username %}
                             {% if message.content %}
                                 <div class="d-flex justify-content-end mb-4">
-                                    <span class="msg_time_send">{{ message.created_at }}</span>
+                                    <span class="msg_time_send">{{ message.created_at|date:"Y/n/j - H:i" }}</span>
                                     <div class="msg_cotainer_send">{{ message.content }}</div>
                                 </div>
                             {% else %}
                                 <div class="d-flex justify-content-end mb-4">
-                                    <span class="msg_time_send">{{ message.created_at }}</span>
+                                    <span class="msg_time_send">{{ message.created_at|date:"Y/n/j - H:i" }}</span>
                                     <div class="msg_cotainer_send_img">
                                         <img src="{{ message.image.url }}" alt="image"
                                              style="width: 130px; border-radius: 50%">
@@ -67,14 +67,15 @@
                             {% if message.content %}
                                 <div class="d-flex justify-content-start mb-4">
                                     <div class="msg_cotainer">{{ message.content }}</div>
-                                    <span class="msg_time">{{ message.created_at }}</span>
+                                    <span class="msg_time">{{ message.created_at|date:"Y/n/j - H:i" }}</span>
                                 </div>
                             {% else %}
                                 <div class="d-flex justify-content-start mb-4">
                                     <div class="msg_cotainer_img">
-                                        <img src="{{ message.image.url }}" alt="image" style="width: 130px; border-radius: 50%">
+                                        <img src="{{ message.image.url }}" alt="image"
+                                             style="width: 130px; border-radius: 50%">
                                     </div>
-                                    <span class="msg_time">{{ message.created_at }}</span>
+                                    <span class="msg_time">{{ message.created_at|date:"Y/n/j - H:i" }}</span>
                                 </div>
                             {% endif %}
                         {% endif %}
@@ -154,13 +155,15 @@
         document.querySelector('#chat-message-submit').onclick = function (e) {
             const messageInputDom = document.querySelector('#chat-message-input');
             const message = messageInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'message': message,
-                'command': 'new_message',
-                'username': username,
-                'roomName': roomName,
-            }));
-            messageInputDom.value = '';
+            if (message) {
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'command': 'new_message',
+                    'username': username,
+                    'roomName': roomName,
+                }));
+                messageInputDom.value = '';
+            }
         };
 
         function createMessage(data) {
@@ -169,7 +172,7 @@
             let content = data['content'];
             let createDate = new Date(data['created_at']);
             let date = createDate.getDate();
-            let month = createDate.getMonth();
+            let month = createDate.getMonth() + 1;
             let year = createDate.getFullYear();
             let hour = createDate.getHours();
             let min = createDate.getMinutes();
