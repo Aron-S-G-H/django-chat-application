@@ -142,7 +142,7 @@ body, html {
 }
 
 .offline {
-        position: absolute;
+    position: absolute;
     height: 15px;
     width: 15px;
     border-radius: 50%;
@@ -189,6 +189,7 @@ body, html {
     position: relative;
     max-width: 60%;
 }
+
 .msg_cotainer_img {
     margin-top: auto;
     margin-bottom: auto;
@@ -206,6 +207,7 @@ body, html {
     position: relative;
     max-width: 60%;
 }
+
 .msg_cotainer_info {
     margin-top: auto;
     margin-bottom: auto;
@@ -214,6 +216,7 @@ body, html {
     max-width: 60%;
     color: white;
 }
+
 .msg_cotainer_send_img {
     margin-top: auto;
     margin-bottom: auto;
@@ -292,4 +295,46 @@ body, html {
     .contacts_card {
         margin-bottom: 15px !important;
     }
+}
+
+.userList-modal-parent {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100%;
+    display: none;
+}
+
+.userList-modal {
+    background: white;
+    width: 70%;
+    padding: 30px;
+    border-radius: 6px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px;
+    position: relative;
+    animation: 0.5s drop;
+    max-height: 500px;
+    overflow-y: scroll;
+}
+
+@keyframes drop {
+    0% {
+        top: -100px;
+    }
+    100% {
+        top: 50%;
+    }
+}
+
+.X {
+    position: absolute;
+    right: 20px;
+    top: 5px;
+    font-size: 40px;
+    cursor: pointer;
+
 }

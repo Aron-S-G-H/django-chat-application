@@ -6,7 +6,7 @@ import json
 from .serializer import MessageSerializer, ChatRoomSerializer
 import base64
 from django.core.files.base import ContentFile
-from.models import Message, ChatRoom
+from .models import Message, ChatRoom
 
 
 def image_fixer(image_data):
@@ -33,6 +33,15 @@ def room_icon_query(room_name, image_data):
     chat_room.room_image.save('image.jpg', image)
     chat_room.save()
     return chat_room
+
+
+def clear_history_query(room_name):
+    try:
+        chat_room = ChatRoom.objects.get(room_name=room_name)
+        chat_room.messages.clear()
+        return True
+    except:
+        return False
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -78,6 +87,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'content': {'type': 'changeIcon', 'message': f'{username} changed the room icon'},
         })
 
+    async def clear_history(self, data):
+        room_name = data.get('roomName', None)
+        clear_history = await database_sync_to_async(clear_history_query)(room_name)
+        if clear_history:
+            await self.channel_layer.group_send(self.room_group_name, {
+                'type': 'chat_message',
+                'command': 'clear_history',
+            })
 
     async def message_serializer(self, query):
         serialized_message = MessageSerializer(query)
@@ -105,7 +122,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if command == 'image' or command == 'new_message':
             await self.channel_layer.group_send(self.room_group_name, {
                 "type": "chat_message",
-                "content": (lambda content: data['result']['image'] if(command == 'image') else data['result']['content'])(command),
+                "content": (
+                    lambda content: data['result']['image'] if (command == 'image') else data['result']['content'])(
+                    command),
                 "__str__": data['result']['__str__'],
                 "created_at": data['result']['created_at'],
                 'command': command,
@@ -123,5 +142,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
     commands = {
         'new_message': new_message,
         'change_icon': change_icon,
+        'clear_history': clear_history,
     }
-

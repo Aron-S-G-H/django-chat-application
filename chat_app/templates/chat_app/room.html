@@ -39,9 +39,15 @@
                             </label>
                             <input type="file" id="iconInput" name="image" class="d-none">
                         </li>
-                        <li><i class="fas fa-users"></i>Members list</li>
+                        <li onclick="membersList()">
+                            <i class="fas fa-users"></i>
+                            Members list
+                        </li>
                         {% if request.user == chat_model.creator %}
-                            <li id="clearHistory"><i class="fas fa-history"></i>Clear history</li>
+                            <li onclick="clearHistory()">
+                                <i class="fas fa-history"></i>
+                                Clear history
+                            </li>
                             <li onclick="removeRoom('{{ chat_model.creator.username }}')">
                                 <i class="fas fa-trash"></i>
                                 Delete room
@@ -112,6 +118,20 @@
         </div>
     </div>
 
+    <div class="userList-modal-parent">
+        <div class="userList-modal">
+            <ul class="my-3">
+                {% for member in chat_model.members.all %}
+                    <li class="py-3 d-flex justify-content-around {{ member.username }}">
+                        <span>Name : {{ member.first_name }} {{ member.last_name }}</span>
+                        <span>Username : {{ member.username }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <span class="X text-danger" onclick="closeMemberList()">&times;</span>
+        </div>
+    </div>
+
     {{ room_name|json_script:"room-name" }}
 
     <script>
@@ -122,6 +142,8 @@
         attachBtn.addEventListener('change', readFile);
         let changeIconInput = document.getElementById('iconInput');
         changeIconInput.addEventListener('change', readFile)
+        let modalParent = document.querySelector('.userList-modal-parent');
+        let chatSection = document.querySelector('.chat')
 
 
         const chatSocket = new ReconnectingWebSocket(
@@ -140,6 +162,8 @@
                 infoMessage(data)
             } else if (data['command'] === 'change_icon') {
                 changeIcon(data)
+            } else if (data['command'] === 'clear_history') {
+                clearHistory(true)
             }
         };
 
@@ -265,11 +289,28 @@
             } else {
                 messageBody.insertAdjacentHTML('beforeend',
                     `<div class="d-flex justify-content-center mb-4" style="background-color: #575757">
-                    <div class="msg_cotainer_info">
-                       ${message}
-                    </div>
-                </div>`
+                        <div class="msg_cotainer_info">
+                            ${message}
+                        </div>
+                    </div>`
                 )
+            }
+            if (dataType === 'join'){
+                let userList = document.querySelector('.userList-modal ul');
+                let userName = data['content']['username'];
+                let firstName = data['content']['first_name'];
+                let lastName = data['content']['last_name'];
+                userList.insertAdjacentHTML('beforeend',
+                    `<li class="py-3 d-flex justify-content-around ${userName}">
+                        <span>Name : ${firstName} ${lastName}</span>
+                        <span>Username : ${userName}</span>
+                    </li>`
+                )
+            } else if (dataType === 'left') {
+                let userList = document.querySelector('.userList-modal ul');
+                let userName = data['content']['username'];
+                let userItem = userList.querySelector(`.${userName}`);
+                userList.removeChild(userItem);
             }
         }
 
@@ -323,6 +364,39 @@
                     })
                 }
             })
+        }
+
+        function clearHistory(isCleared) {
+            if (isCleared === true) {
+                messageBody.innerHTML = '';
+            } else {
+                Swal.fire({
+                    title: 'Are you sure ?',
+                    text: 'Do you want to delete all the messages ?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, Delete!',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        chatSocket.send(JSON.stringify({
+                            'command': 'clear_history',
+                            'roomName': roomName,
+                        }));
+                    }
+                })
+            }
+        }
+
+        function membersList() {
+            modalParent.style.display = 'block'
+            chatSection.style.filter = 'blur(10px)'
+        }
+
+        function closeMemberList() {
+            modalParent.style.display = 'none';
+            chatSection.style.filter = 'blur(0px)';
         }
 
         $(document).ready(function () {

@@ -107,7 +107,7 @@ class CheckOtp(View):
                     email=new_user.email,
                     password=new_user.password
                 )
-                login(request, user)
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 new_user.delete()
                 return JsonResponse({'status': 200, 'username': user.username})
             except:

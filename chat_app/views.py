@@ -84,7 +84,13 @@ def join_room(request):
                 room_group_name, {
                     'type': 'chat_message',
                     'command': 'info',
-                    'content': {'type': 'join', 'message': f'{user.username} joined the room'},
+                    'content': {
+                        'type': 'join',
+                        'message': f'{user.username} joined the room',
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'username': user.username,
+                    },
                 }
             )
             room = ChatRoom.objects.get(room_name=room_name)
@@ -116,7 +122,11 @@ def remove_room(request):
                 room_group_name, {
                     'type': 'chat_message',
                     'command': 'info',
-                    'content': {'type': 'left', 'message': f'{user.username} left the room'},
+                    'content': {
+                        'type': 'left',
+                        'message': f'{user.username} left the room',
+                        'username': user.username,
+                    },
                 }
             )
             chat_room.members.remove(user)
