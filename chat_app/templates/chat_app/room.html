@@ -154,6 +154,39 @@
             + '/'
         );
 
+        const chatSocket2 = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/chat/'
+            + 'listener'
+            + '/'
+        );
+
+        chatSocket2.onmessage = function (e) {
+            let data = JSON.parse(e.data)
+            for (let user of data['members_list']) {
+                if (user === username) {
+                    if (data['__str__'] !== username) {
+                        if (data['room_name'] !== roomName) {
+                            if (!('Notification' in window)) {
+                                alert('This browser does not support Notification')
+                            }
+                            else if (Notification.permission === 'granted') {
+                                new Notification(`${data['__str__']} has sent new ${data['content']} in ${data['room_name']}`)
+                            }
+                            else if (Notification.permission === 'denied' || Notification.permission === 'default') {
+                                Notification.requestPermission().then(function (status) {
+                                    if (status === 'granted') {
+                                        new Notification(`${data['__str__']} has sent new ${data['content']} in ${data['room_name']}`)
+                                    }
+                                })
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
             if (data['command'] === 'new_message' || data['command'] === 'image') {

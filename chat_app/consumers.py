@@ -44,6 +44,10 @@ def clear_history_query(room_name):
         return False
 
 
+def get_chat_room(room_name):
+    return ChatRoom.objects.get(room_name=room_name)
+
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
@@ -59,6 +63,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.disconnect(403)
 
     async def new_message(self, data):
+        await self.notification(data)
         message = data.get('message', None)
         image = data.get('image', None)
         username = data.get('username', None)
@@ -95,6 +100,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'chat_message',
                 'command': 'clear_history',
             })
+
+    async def notification(self, data):
+        room_name = data['roomName']
+        username = data['username']
+        message = data.get('message', None)
+        image = data.get('image', None)
+        members_list = []
+        chat_room = await database_sync_to_async(get_chat_room)(room_name)
+        for _ in chat_room.members.all():
+            members_list.append(_.username)
+
+        result = {
+            'type': 'chat_message',
+            'content': 'message',
+            '__str__': username,
+            'room_name': room_name,
+            'members_list': members_list,
+        }
+        if image:
+            result['content'] = 'image'
+
+        await self.channel_layer.group_send('chat_listener', result)
 
     async def message_serializer(self, query):
         serialized_message = MessageSerializer(query)
