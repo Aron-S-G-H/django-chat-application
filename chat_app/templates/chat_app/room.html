@@ -26,7 +26,7 @@
                         {% endwith %}
                     </div>
                     <div class="video_cam">
-                        <span><i class="fas fa-video"></i></span>
+                        <a href="{% url 'video_call' %}"><span><i class="fas fa-video"></i></span></a>
                         <span><i class="fas fa-phone"></i></span>
                     </div>
                 </div>
@@ -142,8 +142,8 @@
         attachBtn.addEventListener('change', readFile);
         let changeIconInput = document.getElementById('iconInput');
         changeIconInput.addEventListener('change', readFile)
-        let modalParent = document.querySelector('.userList-modal-parent');
-        let chatSection = document.querySelector('.chat')
+        let userListModalParent = document.querySelector('.userList-modal-parent');
+        let chatSection = document.querySelector('.chat');
 
 
         const chatSocket = new ReconnectingWebSocket(
@@ -305,7 +305,6 @@
                    </div>`
                     )
                 }
-
             }
         }
 
@@ -423,12 +422,12 @@
         }
 
         function membersList() {
-            modalParent.style.display = 'block'
+            userListModalParent.style.display = 'block'
             chatSection.style.filter = 'blur(10px)'
         }
 
         function closeMemberList() {
-            modalParent.style.display = 'none';
+            userListModalParent.style.display = 'none';
             chatSection.style.filter = 'blur(0px)';
         }
 

@@ -1,6 +1,6 @@
+from datetime import datetime
 from django.db import models
 from django.utils.text import slugify
-
 from account_app.models import User
 
 
@@ -28,3 +28,31 @@ class Message(models.Model):
 
     def __str__(self):
         return self.author.username
+
+
+STATUS_LIST = {
+    0: 'Contacting',
+    1: 'Not Available',
+    2: 'Accepted',
+    3: 'Rejected',
+    4: 'Busy',
+    5: 'Processing',
+    6: 'Ended',
+}
+
+
+class VideoCall(models.Model):
+    caller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='caller')
+    callee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='callee')
+    status = models.PositiveSmallIntegerField(default=0)
+    date_started = models.DateTimeField(default=datetime.now())
+    date_ended = models.DateTimeField(default=datetime.now())
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def status_name(self):
+        return STATUS_LIST[self.status]
+
+    @property
+    def duration(self):
+        return self.date_ended - self.date_started

@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
@@ -6,7 +7,7 @@ from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
 import json
-from .models import ChatRoom, Message
+from .models import ChatRoom, Message, VideoCall
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.contrib.auth.decorators import login_required
@@ -132,3 +133,10 @@ def remove_room(request):
             chat_room.members.remove(user)
         return JsonResponse({'status': 200})
     return JsonResponse({'status': 400})
+
+
+@login_required(login_url='account:login')
+def video_call(request):
+    user = request.user
+    call_logs = VideoCall.objects.filter(Q(callee_id=user.id) | Q(caller_id=user.id)).order_by('-date_created')[:5]
+    return render(request, 'chat_app/video_call.html', {'call_logs': call_logs})
