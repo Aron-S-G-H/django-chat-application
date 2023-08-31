@@ -26,8 +26,11 @@
                         {% endwith %}
                     </div>
                     <div class="video_cam">
-                        <a href="{% url 'video_call' %}"><span><i class="fas fa-video"></i></span></a>
-                        <span><i class="fas fa-phone"></i></span>
+                        <a href="{% url 'video_call' chat_model.slug %}">
+                            <span>
+                                <i class="fas fa-video"></i>
+                            </span>
+                        </a>
                     </div>
                 </div>
                 <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
@@ -145,9 +148,10 @@
         let userListModalParent = document.querySelector('.userList-modal-parent');
         let chatSection = document.querySelector('.chat');
 
-
+        let ws_scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const chatSocket = new ReconnectingWebSocket(
-            'ws://'
+            ws_scheme
+            +'://'
             + window.location.host
             + '/ws/chat/'
             + roomName

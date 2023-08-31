@@ -136,7 +136,11 @@ def remove_room(request):
 
 
 @login_required(login_url='account:login')
-def video_call(request):
+def video_call(request, room_slug):
     user = request.user
+    chat_room_name = ChatRoom.objects.get(slug=room_slug).room_name
     call_logs = VideoCall.objects.filter(Q(callee_id=user.id) | Q(caller_id=user.id)).order_by('-date_created')[:5]
-    return render(request, 'chat_app/video_call.html', {'call_logs': call_logs})
+    return render(request, 'chat_app/video_call.html', {
+        'call_logs': call_logs,
+        'room_name': mark_safe(json.dumps(chat_room_name)),
+    })

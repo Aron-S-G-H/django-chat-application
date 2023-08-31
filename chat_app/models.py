@@ -7,7 +7,7 @@ from account_app.models import User
 class ChatRoom(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='room_creator')
     room_name = models.CharField(max_length=50, unique=True)
-    members = models.ManyToManyField(User, related_name='members')
+    members = models.ManyToManyField(User, related_name='rooms')
     room_image = models.ImageField(upload_to='room-image', blank=True, null=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
 

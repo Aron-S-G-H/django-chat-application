@@ -12,6 +12,6 @@ urlpatterns = [
     path('chat/', include('chat_app.urls')),
     path('account/', include('account_app.urls')),
     path('accounts/', include('allauth.urls')),
-    path('video-call', chat_views.video_call, name='video_call'),
+    path('video-call/<slug:room_slug>', chat_views.video_call, name='video_call'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 urlpatterns + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

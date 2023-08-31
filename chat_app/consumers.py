@@ -19,6 +19,7 @@ def image_fixer(image_data):
     return data
 
 
+@database_sync_to_async
 def new_message_query(username, room_name, message=None, image=None):
     user = User.objects.get(username=username)
     chat_room = ChatRoom.objects.get(room_name=room_name)
@@ -30,6 +31,7 @@ def new_message_query(username, room_name, message=None, image=None):
     return massage_model
 
 
+@database_sync_to_async
 def room_icon_query(room_name, image_data):
     chat_room = ChatRoom.objects.get(room_name=room_name)
     image = image_fixer(image_data)
@@ -38,15 +40,17 @@ def room_icon_query(room_name, image_data):
     return chat_room
 
 
+@database_sync_to_async
 def clear_history_query(room_name):
     try:
-        chat_room = ChatRoom.objects.get(room_name=room_name)
-        chat_room.messages.clear()
+        chat_room_messages = Message.objects.filter(chat_room__room_name=room_name)
+        chat_room_messages.delete()
         return True
     except:
         return False
 
 
+@database_sync_to_async
 def get_chat_room(room_name):
     return ChatRoom.objects.get(room_name=room_name)
 
@@ -71,7 +75,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         image = data.get('image', None)
         username = data.get('username', None)
         room_name = data.get('roomName', None)
-        create_new_message = await database_sync_to_async(new_message_query)(username, room_name, message, image)
+        create_new_message = await new_message_query(username, room_name, message, image)
         new_message_json = await self.message_serializer(create_new_message)
         result = eval(new_message_json)  # REMOVE BYTE STRING
         if image:
@@ -84,7 +88,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = data.get('username', None)
         room_name = data.get('roomName', None)
         image_data = data.get('image', None)
-        change_room_icon = await database_sync_to_async(room_icon_query)(room_name, image_data)
+        change_room_icon = await room_icon_query(room_name, image_data)
         room_icon_json = await self.room_icon_serializer(change_room_icon)
         result = eval(room_icon_json)
         context = {'command': 'change_icon', 'result': result}
@@ -97,7 +101,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def clear_history(self, data):
         room_name = data.get('roomName', None)
-        clear_history = await database_sync_to_async(clear_history_query)(room_name)
+        clear_history = await clear_history_query(room_name)
         if clear_history:
             await self.channel_layer.group_send(self.room_group_name, {
                 'type': 'chat_message',
@@ -110,7 +114,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data.get('message', None)
         image = data.get('image', None)
         members_list = []
-        chat_room = await database_sync_to_async(get_chat_room)(room_name)
+        chat_room = await get_chat_room(room_name)
         for _ in chat_room.members.all():
             members_list.append(_.username)
 
@@ -186,16 +190,19 @@ class VideoChatConsumer(AsyncConsumer):
         self.user = self.scope['user']
         self.user_room_id = f"videochat_{self.user.id}"
 
-        await self.channel_layer.group_add(
-            self.user_room_id,
-            self.channel_name
-        )
+        if self.user.is_authenticated:
+            await self.channel_layer.group_add(
+                self.user_room_id,
+                self.channel_name
+            )
 
-        await self.send({
-            'type': 'websocket.accept'
-        })
+            await self.send({
+                'type': 'websocket.accept'
+            })
+        else:
+            await self.websocket_disconnect()
 
-    async def websocket_disconnect(self, event):
+    async def websocket_disconnect(self):
         video_thread_id = self.scope['session'].get('video_thread_id', None)
         videothread = await self.change_videothread_status(video_thread_id, VC_ENDED)
         if videothread is not None:
@@ -224,7 +231,6 @@ class VideoChatConsumer(AsyncConsumer):
 
     async def websocket_receive(self, event):
         text_data = event.get('text', None)
-        bytes_data = event.get('bytes', None)
 
         if text_data:
             text_data_json = json.loads(text_data)
@@ -232,7 +238,8 @@ class VideoChatConsumer(AsyncConsumer):
 
             if message_type == "createOffer":
                 callee_username = text_data_json['username']
-                status, video_thread_id = await self.create_videothread(callee_username)
+                room_name = text_data_json['room_name']
+                status, video_thread_id = await self.create_videothread(callee_username, room_name)
 
                 await self.send({
                     'type': 'websocket.send',
@@ -366,13 +373,15 @@ class VideoChatConsumer(AsyncConsumer):
             return None
 
     @database_sync_to_async
-    def create_videothread(self, callee_username):
+    def create_videothread(self, callee_username, room_name):
         try:
             callee = User.objects.get(username=callee_username)
+            if not callee.rooms.filter(room_name=room_name).exists():
+                return 404, None
         except User.DoesNotExist:
             return 404, None
 
-        if VideoCall.objects.filter(Q(caller_id=callee.id) | Q(callee_id=callee.id), status=VC_PROCESSING).count() > 0:
+        if VideoCall.objects.filter(Q(caller_id=callee.id) | Q(callee_id=callee.id), status=VC_PROCESSING).exists():
             return VC_BUSY, None
 
         videothread = VideoCall.objects.create(caller_id=self.user.id, callee_id=callee.id)

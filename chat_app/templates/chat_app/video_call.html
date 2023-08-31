@@ -129,14 +129,17 @@
             ]
         };
 
+        let ws_scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const socket = new WebSocket(
-            'ws://' +
-            window.location.host +
-            '/ws/videochat/'
+            ws_scheme
+            +'://'
+            +window.location.host
+            +'/ws/videochat/'
         );
 
 
         const VC_CONTACTING = 0, VC_NOT_AVAILABLE = 1, VC_ACCEPTED = 2, VC_REJECTED = 3, VC_BUSY = 4, VC_PROCESSING = 5, VC_ENDED = 6;
+        const roomName = {{ room_name }};
 
         let pc;
         let isOfferer = false;
@@ -362,7 +365,7 @@
             let username = usernameInputDom.value;
             document.querySelector('#call-status').innerHTML = "Looking for user...";
             disableCallViews();
-            sendMessage({'type': "createOffer", 'username': username})
+            sendMessage({'type': "createOffer", 'username': username, 'room_name': roomName})
         };
 
         document.querySelector('#btnHangup').onclick = function (e) {
@@ -383,4 +386,3 @@
         };
     </script>
 {% endblock %}
-{#{% endblock scripts %}#}
