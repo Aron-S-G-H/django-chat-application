@@ -142,3 +142,9 @@ ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_REQUIRED = True
 
+
+# Celery Configuration
+CELERY_TIMEZONE = "Asia/Tehran"
+CELERY_ENABLE_UTC = True
+CELERY_BROKER_URL = 'pyamqp://guest@localhost:5672'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'

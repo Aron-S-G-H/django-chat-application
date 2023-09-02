@@ -1,9 +1,9 @@
 from django.core.mail import send_mail
 from django.conf import settings
-# from celery import shared_task
+from celery import shared_task
 
 
-# @shared_task
+@shared_task
 def send_email(random_code: int, user_email: str):
     try:
         send_mail(

@@ -56,8 +56,9 @@ class RegisterView(View):
                 return JsonResponse({'status': 409})
             else:
                 random_code = randint(100000, 999999)
-                email_sent = send_email(random_code, data['email'])
-                if email_sent:
+                email_sent = send_email.delay(random_code, data['email'])
+                email_result = email_sent.get()
+                if email_result:
                     token = str(uuid4())
                     Otp.objects.create(
                         username=data['username'],
