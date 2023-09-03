@@ -16,6 +16,10 @@ Async Chat application with Django Channels, Websocket and JS (Ajax)
 - Members list
 - Celery (RabbitMQ as broker & Redis as backend)
 
+---
+### ⚠️ Video call doesn't support Microsoft Edge browser
+---
+
 ### Usage :
 ```bash
 git clone https://github.com/Aron-S-G-H/django-chat-application.git
@@ -27,3 +31,10 @@ python manage.py runserver # and see in localhost:8000
 celery -A QuizApp worker -l info
 # you also need RabbitMQ as broker and Redis as backend
 ```
+### Result
+<p align="center">
+  <img src="https://github.com/Aron-S-G-H/django-chat-application/blob/main/assets/result.png">
+</p>
+
+---
+#### any contributions are welcome
