@@ -26,7 +26,7 @@ class CustomUserAdmin(UserAdmin):
             'first_name',
             'last_name',
             'email',
-            'last_login', 'date_joined', 'profile_picture'
+            'last_login', 'date_joined',
         )}),
         ("permissions", {"fields": ("is_superuser", "is_staff", "is_active", "groups", "user_permissions")}),
     )
@@ -38,7 +38,6 @@ class CustomUserAdmin(UserAdmin):
                 "email",
                 "first_name",
                 "last_name",
-                "profile_picture",
                 "password1", "password2", "is_superuser", "is_staff",
                 "is_active", "groups", "user_permissions"
             )}
