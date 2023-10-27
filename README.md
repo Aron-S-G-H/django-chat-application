@@ -16,6 +16,9 @@ Async Chat application with Django Channels, Websocket and JS (Ajax)
 - Members list
 - Celery (RabbitMQ as broker & Redis as backend)
 
+### ToDo 
+- Add Docker
+
 ---
 ### ⚠️ Video call doesn't support Microsoft Edge browser
 ---
