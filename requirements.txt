@@ -2,7 +2,7 @@ amqp==5.1.1
 asgiref==3.7.2
 async-timeout==4.0.3
 attrs==23.1.0
-autobahn==23.6.2
+autobahn==23.1.2
 Automat==22.10.0
 billiard==4.1.0
 celery==5.3.1
