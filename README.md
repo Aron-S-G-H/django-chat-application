@@ -27,11 +27,10 @@ Async Chat application with Django Channels, Websocket and JS (Ajax)
 ```bash
 git clone https://github.com/Aron-S-G-H/django-chat-application.git
 pip install -r requirements.txt
-python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver # and see in localhost:8000
 # In another terminal, enter the following command to run celery
-celery -A QuizApp worker -l info
+celery -A ChatApp worker -l info
 # you also need RabbitMQ as broker and Redis as backend
 ```
 ### Result
