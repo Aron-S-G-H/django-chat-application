@@ -24,7 +24,7 @@ Async Chat application with Django Channels, Websocket and JS (Ajax)
 ---
 
 ### Usage :
--  For sending a one-time password via email, you should set your email and your email host password in 'EMAIL_HOST_USER' and 'EMAIL_HOST_PASSWORD' in 'settings.py . Otherwise, sending the one-time password for user registration won't work .
+-  For sending a one-time password via email, you should set your email and your email host password in 'EMAIL_HOST_USER' and 'EMAIL_HOST_PASSWORD' in 'settings.py' . Otherwise, sending the one-time password for user registration won't work .
 ```bash
 git clone https://github.com/Aron-S-G-H/django-chat-application.git
 pip install -r requirements.txt
